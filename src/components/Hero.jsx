@@ -67,9 +67,18 @@ export default function Hero() {
             </a>
           </motion.div>
 
-          {event.hero.logoUrl && (
+          {event.hero.logoUrlDark && (
             <motion.div variants={item} className="hero__logo-slot">
-              <img src={`${import.meta.env.BASE_URL}${event.hero.logoUrl}`} alt={`${event.name} logo`} />
+              <img
+                className="hero__logo hero__logo--dark"
+                src={`${import.meta.env.BASE_URL}${event.hero.logoUrlDark}`}
+                alt={`${event.name} logo`}
+              />
+              <img
+                className="hero__logo hero__logo--light"
+                src={`${import.meta.env.BASE_URL}${event.hero.logoUrlLight}`}
+                alt={`${event.name} logo`}
+              />
             </motion.div>
           )}
         </motion.div>

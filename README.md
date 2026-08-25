@@ -14,14 +14,15 @@ The WolfHacks landing page. Built with React + Vite, hosted by ACM at NC State.
 
 ## Project structure
 
-- `src/data/siteConfig.js`: all event copy and settings (dates, FAQ, links, the pre-register URL). Edit this file to update page content without touching components.
+- `src/data/siteConfig.js`: all event copy and settings (dates, FAQ, and links). Edit this file to update page content without touching components.
 - `src/components/`: React components (Hero, Faq, Footer, Countdown, TrustBadge, WolfMark, Starfield).
 - `src/index.css`: all styles.
 - `public/images/`: the ACM NCSU Chapter logo and favicon.
 
 ## Things to update before launch
 
-- `src/data/siteConfig.js` → `event.hero.preRegisterUrl`: replace with your real pre-registration form URL.
+- Run the frontend and backend together for the application flow: the `Register` buttons open `/apply`, and submissions are sent to `POST /api/applications`.
+- Set `VITE_API_URL` when the API is hosted somewhere other than `http://localhost:8000`.
 - `src/data/siteConfig.js` → `event.trustBadge`: swap in your real MLH season year/region/color once generated from MLH's organizer dashboard.
 - Add real event dates, location details, and FAQ answers as they're finalized.
 - Replace the "YOUR WOLFHACKS LOGO HERE" placeholder in the hero with an actual WolfHacks logo image once you have one.

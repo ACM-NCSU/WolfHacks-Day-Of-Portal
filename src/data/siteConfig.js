@@ -32,13 +32,14 @@ const siteConfig = {
       subhead:
         "WolfHacks is a fall hackathon brought together by ACM at NC State, where students come together to build something in one weekend. It's open to all majors and all skill levels. You'll have access to workshops, sponsor networking, mentors, and yes, free food. All you have to do is build a project in 24 hours.",
       registerNote:
-        "Registration isn't open yet. Fill out this quick form to let us know you're interested, and we'll notify you the moment it goes live.",
-      // TODO: replace with your real pre-registration form URL (Google Form, Typeform, etc.)
-      preRegisterUrl: 'https://forms.gle/m3jiVcFZdRRo2tLo8',
-      // TODO: once the WolfHacks logo is ready, drop the file in public/images/
-      // and set this to its filename (e.g. 'images/wolfhacks-logo.png'). It will
-      // appear next to the ACM badge automatically — the space is already reserved.
-      logoUrl: null,
+        'Registration is open. Complete your application below to join WolfHacks 2026.',
+      preRegisterUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSfVB5eG-ZD8I3EEUlYpEZzlQDA5_FBwCq3Noicah8exDBY4Yw/viewform',
+      applicationUrl: '/apply',
+      // Two theme-matched variants: light art on a dark card for dark mode,
+      // dark art on a light card for light mode. Hero.jsx renders both and
+      // CSS swaps which is visible based on [data-theme], so there's no flash.
+      logoUrlLight: 'images/lightmodelogo-transparent.png',
+      logoUrlDark: 'images/darkmodelogo-transparent.png',
     },
 
     faq: {

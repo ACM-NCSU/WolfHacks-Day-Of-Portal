@@ -241,18 +241,22 @@ a.acm-mention:hover { text-decoration: underline; }
 }
 
 .hero__logo-slot {
-  width: 104px;
-  height: 104px;
+  height: 84px;
   margin: 0;
   flex-shrink: 0;
 }
 
-.hero__logo-slot img {
-  display: block;
-  width: 100%;
+.hero__logo {
+  display: none;
   height: 100%;
-  object-fit: contain;
+  width: auto;
+  margin: 0;
+  filter: drop-shadow(0 0 14px rgba(204, 0, 0, 0.25));
 }
+
+.hero__logo--dark { display: block; }
+[data-theme='light'] .hero__logo--dark { display: none; }
+[data-theme='light'] .hero__logo--light { display: block; }
 
 .section__heading {
   font-family: var(--font-display);
@@ -287,6 +291,40 @@ a.acm-mention:hover { text-decoration: underline; }
 }
 
 .btn--primary { background: var(--red); color: var(--cream); }
+
+.btn:disabled { cursor: wait; opacity: 0.65; }
+
+/* ---------- Application ---------- */
+
+.apply-page { min-height: 100vh; padding: 40px 0 96px; }
+.apply-page__container { max-width: 860px; }
+.apply-page__back { color: var(--steel-dark); font-family: var(--font-mono); font-size: 13px; }
+.apply-page__back:hover { color: var(--red); }
+.apply-page__intro { margin: 72px 0 40px; }
+.application-form { max-width: 760px; padding: 28px; border: 1px solid var(--line); background: var(--card); }
+.application-form__grid { display: block; }
+.application-form label { display: flex; flex-direction: column; gap: 7px; margin-bottom: 22px; color: var(--paper); font-family: var(--font-mono); font-size: 13px; }
+.application-form__question { display: inline; }
+.application-form__field-error { display: block; margin-top: 2px; color: #ff8b8b; font-family: var(--font-body); font-size: 12px; line-height: 1.4; }
+.application-form__consent-error { margin: -8px 0 14px 28px; }
+.required-marker { display: inline; margin-left: 2px; color: var(--red); font-size: 10px; line-height: 1; vertical-align: super; }
+.application-form input, .application-form select, .application-form textarea { width: 100%; border: 1px solid var(--line); border-radius: 2px; padding: 12px 13px; background: var(--ink-raised); color: var(--paper); font: 16px var(--font-body); }
+.application-form input:focus, .application-form select:focus, .application-form textarea:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+.application-form textarea { resize: vertical; }
+.application-form__error { margin: 0 0 18px; color: #ff8b8b; }
+.application-form__honeypot { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.application-form__mlh-notice { margin: 0 0 18px; color: var(--steel-dark); font-family: var(--font-body); font-size: 13px; line-height: 1.5; }
+.application-form__consents { border-top: 1px solid var(--line); padding-top: 18px; }
+.application-form__checkbox { display: grid !important; grid-template-columns: 18px minmax(0, 1fr); align-items: start; gap: 10px; margin-bottom: 16px !important; font-family: var(--font-body) !important; font-size: 14px !important; line-height: 1.5; }
+.application-form__checkbox input { width: 16px; height: 16px; margin-top: 3px; accent-color: var(--red); }
+.application-form__checkbox a { color: var(--paper); text-decoration: underline; text-underline-offset: 2px; }
+.application-form__checkbox a:hover { color: var(--red); }
+.apply-success { max-width: 680px; padding: 48px 0; }
+.apply-success .btn { margin-top: 28px; }
+
+@media (max-width: 640px) {
+  .application-form { padding: 20px; }
+}
 
 /* ---------- Wolf mark ----------
    "Wolf Head" by Lorc, via game-icons.net (CC BY 3.0) */
@@ -732,7 +770,7 @@ a.acm-mention:hover { text-decoration: underline; }
 @media (min-width: 768px) {
   .hero__badges { min-height: 132px; }
   .hero__acm-badge { width: 108px; }
-  .hero__logo-slot { width: 132px; height: 132px; }
+  .hero__logo-slot { height: 108px; }
 
   .footer__grid {
     grid-template-columns: 1fr auto;
