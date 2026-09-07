@@ -21,6 +21,11 @@ from supabase import create_client
 
 load_dotenv()
 
+# Imported after load_dotenv() -- both read WOLFHACKS_SESSION_SECRET etc. at
+# module load time, so they must not run before .env is in os.environ.
+import auth_stub
+import teams as teams_routes
+
 _log_formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 # Vercel's log viewer buckets by stream (stdout -> Info, stderr -> Error), not by
@@ -122,6 +127,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Team dashboard (issue #4). auth_stub is a temporary placeholder for #5 --
+# see backend/auth_stub.py's module docstring for the swap contract.
+app.include_router(auth_stub.router)
+app.include_router(teams_routes.router)
 
 
 @app.exception_handler(RequestValidationError)

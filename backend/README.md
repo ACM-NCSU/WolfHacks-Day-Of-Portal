@@ -94,3 +94,37 @@ Also set `GOOGLE_SHEETS_SPREADSHEET_ID` (and `GOOGLE_SHEETS_RANGE` if it
 differs from the default) in the same place. `WOLFHACKS_ALLOWED_ORIGINS`
 generally isn't needed in production — the frontend calls `/api/...` as a
 relative path, so requests are same-origin and never trigger CORS.
+
+## Team dashboard (issue #4)
+
+`auth_stub.py` and `teams.py` add the endpoints behind the `/team` page in
+the frontend. Persistence is **in-memory** for now (`repository.py`) — no
+Supabase table or credentials are needed to run any of this locally; state
+just resets when `uvicorn` restarts. Set `WOLFHACKS_SESSION_SECRET` in `.env`
+(any string for local dev) or the stub login falls back to an insecure
+default and logs a warning.
+
+Seeded accounts (same ones the frontend mock uses, see `plan.md` "How to test
+Phase 2"): `jordan@ncsu.edu` leads "Wolfpack Coders", `taylor@ncsu.edu` is a
+member, `alex@ncsu.edu` has a pending invite, `sam@ncsu.edu` /
+`morgan@ncsu.edu` are checked in with no team, `casey@ncsu.edu` is registered
+but not checked in.
+
+```bash
+# Log in and grab a token
+curl -s -X POST http://127.0.0.1:8000/api/auth/login \
+  -H "Content-Type: application/json" -d '{"email": "jordan@ncsu.edu"}'
+
+# Use it
+TOKEN=<paste the token from above>
+curl -s http://127.0.0.1:8000/api/team/me -H "Authorization: Bearer $TOKEN"
+```
+
+Endpoints: `POST /api/auth/login`, `GET /api/auth/me`, `GET /api/team/me`,
+`GET /api/participants/search?q=`, `POST /api/teams`, `PATCH /api/teams/{id}`,
+`DELETE /api/teams/{id}/members/me`, `POST /api/teams/{id}/invites`,
+`DELETE /api/teams/{id}/invites/{invite_id}`, `POST /api/invites/{id}/accept`,
+`POST /api/invites/{id}/decline`.
+
+`auth_stub.py` is a temporary placeholder for issue #5 (real login) — see its
+module docstring for the swap contract before changing it.
