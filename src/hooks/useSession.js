@@ -1,22 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getSessionToken, setSessionToken } from '../lib/api.js';
-import { mockLogin } from '../data/mockTeamState.js';
+import { login as apiLogin, me as apiMe } from '../lib/teamApi.js';
 
-// Stub for #5 (real login). The "token" is just the participant's email --
-// there is no password and nothing to verify server-side yet. Swapping to
-// real auth later means changing what login()/the mount effect call, not
-// how this hook's consumers use it: { participant, status, login, logout }.
+// Stub for #5 (real login). login() calls the temporary /api/auth/login
+// (backend/auth_stub.py) -- there is no password and nothing beyond an
+// itsdangerous-signed participant id. Swapping to real auth later means
+// changing what login()/the mount effect call, not how consumers use this
+// hook: { participant, status, login, logout }.
 export default function useSession() {
   const [participant, setParticipant] = useState(null);
   const [status, setStatus] = useState('restoring'); // 'restoring' | 'anonymous' | 'authenticated'
 
   useEffect(() => {
-    const storedEmail = getSessionToken();
-    if (!storedEmail) {
+    if (!getSessionToken()) {
       setStatus('anonymous');
       return;
     }
-    mockLogin(storedEmail)
+    apiMe()
       .then((found) => {
         setParticipant(found);
         setStatus('authenticated');
@@ -28,8 +28,8 @@ export default function useSession() {
   }, []);
 
   const login = useCallback(async (email) => {
-    const found = await mockLogin(email); // throws LoginError on failure -- caller renders the reason
-    setSessionToken(email);
+    const { token, participant: found } = await apiLogin(email); // throws LoginError on failure -- caller renders the reason
+    setSessionToken(token);
     setParticipant(found);
     setStatus('authenticated');
     return found;

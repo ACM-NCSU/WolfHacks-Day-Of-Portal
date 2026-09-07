@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { mockCreateTeam } from '../data/mockTeamState.js';
+import { createTeam } from '../lib/teamApi.js';
 
-export default function TeamCreateCard({ participant, onChanged }) {
+export default function TeamCreateCard({ onChanged }) {
   const [name, setName] = useState('');
   const [status, setStatus] = useState('idle'); // 'idle' | 'submitting' | 'error'
   const [error, setError] = useState('');
@@ -17,7 +17,7 @@ export default function TeamCreateCard({ participant, onChanged }) {
     setStatus('submitting');
     setError('');
     try {
-      await mockCreateTeam(participant.id, name);
+      await createTeam(name);
       setName('');
       setStatus('idle');
       await onChanged();

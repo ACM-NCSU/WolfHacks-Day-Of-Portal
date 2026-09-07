@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { mockAcceptInvite, mockCancelInvite, mockDeclineInvite } from '../data/mockTeamState.js';
+import { acceptInvite, cancelInvite, declineInvite } from '../lib/teamApi.js';
 
 // One component for both directions -- same row shape, different actions --
 // rather than an Incoming/Outgoing pair. mode="incoming" is screen 3 (accept
@@ -46,7 +46,7 @@ export default function PendingInvites({ mode, invites, onChanged }) {
                       className="btn btn--ghost"
                       type="button"
                       disabled={busy}
-                      onClick={() => act(invite.id, () => mockDeclineInvite(invite.id))}
+                      onClick={() => act(invite.id, () => declineInvite(invite.id))}
                     >
                       Decline
                     </button>
@@ -54,7 +54,7 @@ export default function PendingInvites({ mode, invites, onChanged }) {
                       className="btn btn--primary"
                       type="button"
                       disabled={busy}
-                      onClick={() => act(invite.id, () => mockAcceptInvite(invite.id, invite.invited_participant_id))}
+                      onClick={() => act(invite.id, () => acceptInvite(invite.id))}
                     >
                       {busy ? 'Working...' : 'Accept'}
                     </button>
@@ -71,7 +71,7 @@ export default function PendingInvites({ mode, invites, onChanged }) {
                       className="btn btn--ghost"
                       type="button"
                       disabled={busy}
-                      onClick={() => act(invite.id, () => mockCancelInvite(invite.id))}
+                      onClick={() => act(invite.id, () => cancelInvite(invite.team_id, invite.id))}
                     >
                       {busy ? 'Working...' : 'Cancel'}
                     </button>

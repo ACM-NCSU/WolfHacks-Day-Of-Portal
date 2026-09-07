@@ -52,7 +52,7 @@ export default function TeamDashboard() {
             ) : (
               <>
                 <PendingInvites mode="incoming" invites={incomingInvites} onChanged={refresh} />
-                <TeamCreateCard participant={participant} onChanged={refresh} />
+                <TeamCreateCard onChanged={refresh} />
                 <p className="section__lede">
                   A team leader can also add you by searching your name or email.
                 </p>

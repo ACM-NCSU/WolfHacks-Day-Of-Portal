@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import SelectField from './SelectField.jsx';
 import siteConfig from '../data/siteConfig.js';
-import { mockUpdateTeam } from '../data/mockTeamState.js';
+import { updateTeam } from '../lib/teamApi.js';
 
 const { tracks, challenges } = siteConfig.event;
 
@@ -13,7 +13,7 @@ export default function TrackChallengePicker({ team, onChanged }) {
     const track = tracks.find((t) => t.name === trackName);
     setError('');
     try {
-      await mockUpdateTeam(team.id, { track_slug: track?.slug ?? null });
+      await updateTeam(team.id, { track_slug: track?.slug ?? null });
       await onChanged();
     } catch (err) {
       console.error(err);
@@ -27,7 +27,7 @@ export default function TrackChallengePicker({ team, onChanged }) {
       : [...team.challenge_slugs, slug];
     setError('');
     try {
-      await mockUpdateTeam(team.id, { challenge_slugs: next });
+      await updateTeam(team.id, { challenge_slugs: next });
       await onChanged();
     } catch (err) {
       console.error(err);

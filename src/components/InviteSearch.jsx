@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { mockInviteParticipant, mockSearchParticipants } from '../data/mockTeamState.js';
+import { inviteParticipant, searchParticipants } from '../lib/teamApi.js';
 
 const MAX_TEAM_SIZE = 4;
 
-export default function InviteSearch({ team, participant, onChanged }) {
+export default function InviteSearch({ team, onChanged }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
@@ -27,17 +27,17 @@ export default function InviteSearch({ team, participant, onChanged }) {
       return;
     }
     let cancelled = false;
-    mockSearchParticipants(query, participant.id).then((found) => {
+    searchParticipants(query).then((found) => {
       if (!cancelled) setResults(found);
     });
     return () => { cancelled = true; };
-  }, [query, participant.id, full]);
+  }, [query, full]);
 
   async function invite(target) {
     setInvitingId(target.id);
     setError('');
     try {
-      await mockInviteParticipant(team.id, target.id, participant.id);
+      await inviteParticipant(team.id, target.id);
       setResults((current) => current.filter((r) => r.id !== target.id));
       await onChanged();
     } catch (err) {

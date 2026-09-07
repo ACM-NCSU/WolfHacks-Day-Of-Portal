@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { mockGetMyState } from '../data/mockTeamState.js';
+import { getMyState } from '../lib/teamApi.js';
 
-// Backed by the mock API for now. TD-23 repoints refresh() at GET
-// /api/team/me and adds a Supabase Realtime subscription that calls refresh()
-// on any change -- the "realtime is only a ping, always re-fetch" pattern is
-// rehearsed here already: every mutation below calls refresh() itself rather
-// than trusting its own response.
+// TD-23 adds a Supabase Realtime subscription that calls refresh() on any
+// change -- the "realtime is only a ping, always re-fetch" pattern is
+// rehearsed here already: every mutation elsewhere calls refresh() itself
+// rather than trusting its own response.
 export default function useTeamState(participant) {
   const [team, setTeam] = useState(null);
   const [incomingInvites, setIncomingInvites] = useState([]);
@@ -27,7 +26,7 @@ export default function useTeamState(participant) {
     }
     setStatus('loading');
     try {
-      const next = await mockGetMyState(participant.id);
+      const next = await getMyState();
       setTeam(next.team);
       setIncomingInvites(next.incomingInvites);
       setOutgoingInvites(next.outgoingInvites);

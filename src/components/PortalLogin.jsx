@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LoginError } from '../data/mockTeamState.js';
+import { LoginError } from '../lib/teamApi.js';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

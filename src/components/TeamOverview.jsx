@@ -3,7 +3,7 @@ import TrackChallengePicker from './TrackChallengePicker.jsx';
 import InviteSearch from './InviteSearch.jsx';
 import PendingInvites from './PendingInvites.jsx';
 import siteConfig from '../data/siteConfig.js';
-import { mockLeaveTeam } from '../data/mockTeamState.js';
+import { leaveTeam } from '../lib/teamApi.js';
 
 const { tracks, challenges } = siteConfig.event;
 
@@ -22,7 +22,7 @@ export default function TeamOverview({ team, participant, outgoingInvites, onCha
     setLeaveStatus('submitting');
     setError('');
     try {
-      await mockLeaveTeam(team.id, participant.id);
+      await leaveTeam(team.id);
       await onChanged();
     } catch (err) {
       console.error(err);
@@ -91,7 +91,7 @@ export default function TeamOverview({ team, participant, outgoingInvites, onCha
       {isLeader && (
         <>
           <TrackChallengePicker team={team} onChanged={onChanged} />
-          <InviteSearch team={team} participant={participant} onChanged={onChanged} />
+          <InviteSearch team={team} onChanged={onChanged} />
           <PendingInvites mode="outgoing" invites={outgoingInvites} onChanged={onChanged} />
         </>
       )}
