@@ -326,6 +326,56 @@ a.acm-mention:hover { text-decoration: underline; }
   .application-form { padding: 20px; }
 }
 
+/* ---------- Select field ----------
+   Shared by the application form and the team dashboard's track/challenge
+   picker (src/components/SelectField.jsx). Previously injected via a
+   <style> tag with hardcoded fallback colors; moved here on real tokens. */
+
+.application-form__searchable { position: relative; }
+.application-form__searchable input { width: 100%; }
+
+.application-form__dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--ink-raised);
+  border: 1px solid var(--line);
+  border-top: none;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.application-form__dropdown-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  color: var(--paper);
+  border-bottom: 1px solid var(--line);
+  transition: background-color 0.15s ease;
+}
+
+.application-form__dropdown-item:hover,
+.application-form__dropdown-item--selected {
+  background-color: var(--red);
+  color: var(--cream);
+}
+
+.application-form__searchable--select input {
+  cursor: pointer;
+  padding-right: 34px;
+}
+
+.application-form__searchable--select::after {
+  content: '\25BE';
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  color: var(--paper);
+  pointer-events: none;
+  font-size: 12px;
+}
+
 /* ---------- Wolf mark ----------
    "Wolf Head" by Lorc, via game-icons.net (CC BY 3.0) */
 
@@ -807,4 +857,88 @@ a.acm-mention:hover { text-decoration: underline; }
 
 @media (min-width: 1280px) {
   .hero__wolf.wolf-mark { width: 276px; height: 276px; }
+}
+
+/* ---------- Secondary button ---------- */
+
+.btn--ghost {
+  background: transparent;
+  color: var(--paper);
+  border-color: var(--line);
+}
+
+.btn--ghost:hover { border-color: var(--red); color: var(--red); }
+
+/* ---------- Team dashboard (issue #4) ---------- */
+
+.team-page { min-height: 100vh; padding: 40px 0 96px; }
+.team-page__container { max-width: 760px; }
+
+.team-page__topline { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.team-page__back { color: var(--steel-dark); font-family: var(--font-mono); font-size: 13px; }
+.team-page__back:hover { color: var(--red); }
+.team-page__logout {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--steel-dark);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  cursor: pointer;
+}
+.team-page__logout:hover { color: var(--red); }
+
+.team-page__intro { margin: 40px 0 32px; }
+
+.team-card { max-width: 760px; padding: 28px; margin-bottom: 24px; border: 1px solid var(--line); background: var(--card); }
+.team-card label { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; color: var(--paper); font-family: var(--font-mono); font-size: 13px; }
+.team-card input { width: 100%; border: 1px solid var(--line); border-radius: 2px; padding: 12px 13px; background: var(--ink-raised); color: var(--paper); font: 16px var(--font-body); }
+.team-card input:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+.team-card__title { margin-bottom: 14px; color: var(--steel); font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
+.team-card__row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.team-card__note { margin: 0; color: var(--steel-dark); font-size: 14px; line-height: 1.5; }
+.team-card__error { margin: 0 0 16px; color: var(--red); font-size: 14px; }
+.team-card__confirm { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+.team-card__confirm .team-card__note { margin-bottom: 14px; }
+
+.team-count { font-family: var(--font-mono); font-size: 13px; color: var(--steel-dark); }
+
+.team-chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; }
+.team-chip-group--tags { margin-bottom: 20px; }
+.team-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--ink-raised);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+button.team-chip { cursor: pointer; transition: border-color 0.15s ease, color 0.15s ease; }
+button.team-chip:hover { border-color: var(--red); color: var(--red); }
+.team-chip--selected { background: var(--red); border-color: var(--red); color: var(--cream); }
+button.team-chip--selected:hover { color: var(--cream); }
+
+.team-member-list { margin: 0 0 20px; }
+.team-member { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.team-member:last-child { border-bottom: none; }
+.team-member__name { display: inline-flex; align-items: center; gap: 8px; color: var(--paper); }
+.team-member__badge { padding: 2px 6px; border: 1px solid var(--red); border-radius: 2px; color: var(--red); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.05em; }
+.team-member__email { color: var(--steel-dark); font-family: var(--font-mono); font-size: 13px; }
+
+.team-invite-list { margin: 0; display: flex; flex-direction: column; gap: 16px; }
+.team-invite { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.team-invite:last-child { border-bottom: none; padding-bottom: 0; }
+.team-invite__info { display: flex; flex-direction: column; gap: 4px; }
+.team-invite__name { color: var(--paper); font-weight: 600; }
+.team-invite__meta { color: var(--steel-dark); font-family: var(--font-mono); font-size: 13px; }
+.team-invite__actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+.team-invite-result { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.team-invite-result__email { margin-left: 6px; color: var(--steel-dark); font-family: var(--font-mono); font-size: 12px; }
+
+@media (max-width: 640px) {
+  .team-card { padding: 20px; }
 }

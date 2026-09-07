@@ -93,6 +93,21 @@ const siteConfig = {
     },
 
     registerThanksMessage: "You'll receive more information closer to the hackathon.",
+
+    // Placeholder content -- the real 2026 track/challenge list isn't final
+    // yet (open question for Cooper, see plan.md). Slugs are the stable
+    // identifier stored on a team; name/description are safe to edit freely.
+    tracks: [
+      { slug: 'open', name: 'Open Track', description: 'Build anything you want -- no theme required.' },
+      { slug: 'ai-ml', name: 'AI / ML', description: 'Projects that meaningfully use machine learning or AI.' },
+      { slug: 'sustainability', name: 'Sustainability', description: 'Projects tackling climate or environmental problems.' },
+    ],
+
+    challenges: [
+      { slug: 'best-design', name: 'Best Design', description: 'Awarded for the most polished, thoughtful user experience.' },
+      { slug: 'best-sponsor-api', name: 'Best Use of a Sponsor API', description: 'Awarded to the team that best integrates a sponsor API or tool.' },
+      { slug: 'best-first-hack', name: 'Best First Hack', description: 'For teams made up entirely of first-time hackathon participants.' },
+    ],
   },
 };
 
