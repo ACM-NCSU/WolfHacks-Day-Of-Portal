@@ -77,17 +77,21 @@ mirrored at `/Users/samarth/.claude/plans/whimsical-meandering-sunset.md`.
       (`backend/repository.py`, same seam as the frontend mock) — no live
       Supabase needed until Phase 4's TD-21 swaps it. Verified end to end
       with `uvicorn` + curl (see commit `2551d7d` for the full test list).
-- [ ] **Phase 3.5 — wire frontend to real backend** (TD-19b, new): still no
-      Supabase — swap the frontend's JS mock for real `apiFetch` calls to the
-      Phase 3 endpoints. Not started; proposed next step.
+- [x] **Phase 3.5 — wire frontend to real backend** (TD-19b): frontend calls
+      `src/lib/teamApi.js` -> real FastAPI endpoints now; `mockTeamState.js`
+      deleted. Still zero Supabase — persistence is still
+      `backend/repository.py`'s in-memory store.
 - [ ] **Phase 4 — DB + realtime** (TD-20..24): `[blocked on Arjun+Bela sign-off]`
       agree + apply schema, dev seed script, realtime wiring, sync docs.
 
-As of 2026-09-07: Phases 1-3 built. Phase 3 (backend) curl-verified; Phase 1/2
-(frontend) build-verified but not yet visually tested in a browser this
-session (browser tooling declined) — needs a manual click-through. Frontend
-and backend are not yet wired together (frontend still calls its own JS
-mock) — see Phase 3.5, proposed as the next step before touching Supabase.
+As of 2026-09-07: Phases 1, 2, 3, and 3.5 built — frontend and backend are one
+connected system now, verified with both dev servers running (including the
+CORS preflight for PATCH/DELETE + Authorization, which curl-only backend
+testing wouldn't catch). **Not yet visually smoke-tested in an actual browser
+this session** (browser tooling declined) — do the walkthrough in plan.md
+"How to test Phase 2" (same accounts, now hitting the real API) before
+trusting this fully. Only Phase 4 (real Supabase) remains, and it's blocked
+on Arjun/Bela sign-off on the shared `participants` table.
 
 ### Coordination contract with other issues
 - **#1 (Arjun, check-in)**: shares the `participants` table. Arjun owns
