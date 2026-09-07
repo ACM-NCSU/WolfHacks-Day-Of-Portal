@@ -408,6 +408,25 @@ a real channel later.
 `requirements.txt`; document the new endpoints in `backend/README.md`; note
 that persistence is in-memory until TD-21.
 
+### Phase 3.5 — Wire frontend to the real backend (still no Supabase)
+
+Added after Phase 3 shipped: the backend now works standalone against its
+own in-memory repository, so there's no reason to leave the frontend talking
+to a *second*, disconnected mock (`src/data/mockTeamState.js`). Doing this
+now means Phase 4 is purely a database swap, not also the first time the two
+halves of the stack actually talk to each other.
+
+**TD-19b · Point the frontend at the real API**
+Replace the `mockLogin`/`mockGetMyState`/etc. calls in `src/hooks/useSession.js`,
+`src/hooks/useTeamState.js`, and all Phase 2 components with `apiFetch` calls
+to the endpoints built in TD-15..18. `src/data/mockTeamState.js` and its
+`LoginError`/`MockApiError` classes can be deleted once nothing imports them.
+Requires running `uvicorn` locally alongside `npm run dev` (`VITE_API_URL`
+already defaults to `http://localhost:8000` in dev, per `src/lib/api.js`).
+*Done when:* the same manual walkthrough from "How to test Phase 2" passes
+against the real backend instead of the JS mock, including a full page
+reload preserving the session (the stub token in `localStorage`).
+
 ### Phase 4 — Database & realtime
 
 **TD-20 · Agree the shared table** `[blocked: Arjun #1, Bela #5]`
@@ -427,11 +446,12 @@ so the feature is testable before #1 exists. Dedupe on `lower(email)` —
 `applications` has no unique email constraint.
 
 **TD-23 · Realtime wiring**
-Add `@supabase/supabase-js`; `src/lib/supabase.js` anon client
-(`VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`); `src/hooks/useTeamState.js`
-fetches `GET /api/team/me` and subscribes to `postgres_changes` on the three
-team tables. **On any event, re-fetch — never read the payload.** Swap TD-06's
-mock fixtures for this hook.
+By this point `useTeamState.js` already calls the real API (TD-19b) — this
+ticket only adds live updates on top. Add `@supabase/supabase-js`;
+`src/lib/supabase.js` anon client (`VITE_SUPABASE_URL` /
+`VITE_SUPABASE_ANON_KEY`); subscribe to `postgres_changes` on the three team
+tables and call `refresh()` on any event. **Never read the payload — always
+re-fetch from FastAPI.**
 *Done when:* an invite sent in one browser profile appears in another without
 a refresh.
 
