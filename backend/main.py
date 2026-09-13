@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Literal
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request as FastAPIRequest
+from fastapi import FastAPI, HTTPException, Header, Request as FastAPIRequest
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -378,4 +378,55 @@ def create_application(application: Application):
     return {
         "updated_range": updated_range,
         "message": "Application received",
+    }
+
+def get_authenticated_user(authorization: str | None):
+    if not authorization:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required."
+        )
+
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authorization header."
+        )
+
+    token = authorization[len("Bearer "):]
+
+    supabase = get_supabase_client()
+
+    if supabase is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Supabase is not configured."
+        )
+
+    try:
+        response = supabase.auth.get_user(token)
+    except Exception:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired session."
+        )
+
+    if response.user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired session."
+        )
+
+    return response.user
+
+@app.get("/api/auth/me")
+def auth_me(
+    authorization: str | None = Header(default=None)
+):
+    user = get_authenticated_user(authorization)
+
+    return {
+        "authenticated": True,
+        "user_id": user.id,
+        "email": user.email,
     }
