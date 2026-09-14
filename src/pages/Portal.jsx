@@ -27,8 +27,17 @@ export default function Portal() {
         });
 
         if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
             await supabase.auth.signOut();
-            window.location.href = '/portal/login';
+            
+            // If there is a registration failure, send back with the query flag
+            if (response.status === 403) {
+                window.location.href = '/portal/login?error=not_registered';
+                return;
+            }
+
+            setError(errData.detail || 'Authentication failed. Please sign in again.');
+            setLoading(false);
             return;
         }
 

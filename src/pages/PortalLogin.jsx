@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 export default function PortalLogin() {
@@ -7,9 +7,15 @@ export default function PortalLogin() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('error') === 'not_registered') {
+            setError('This account is not registered for WolfHacks. Please use the account or email you applied with.');
+        }
+    }, []);
+
     async function handleLogin(event) {
         event.preventDefault();
-
         setError('');
         setLoading(true);
 
@@ -24,7 +30,6 @@ export default function PortalLogin() {
             return;
         }
 
-        // Successful authentication.
         window.location.href = '/portal';
     }
 
@@ -49,31 +54,23 @@ export default function PortalLogin() {
         <main className="portal-login">
             <div className="container">
                 <div className="portal-login__card">
+                    <p className="eyebrow">WOLFHACKS PORTAL</p>
+                    <h1 className="section__heading">Welcome back.</h1>
+                    <p className="section__lede">Sign in to access the WolfHacks portal.</p>
 
-                    <p className="eyebrow">
-                        WOLFHACKS PORTAL
-                    </p>
+                    <form className="portal-login__form" onSubmit={handleLogin}>
+                        {error && (
+                            <div className="portal-login__error-box">
+                                <p>{error}</p>
+                            </div>
+                        )}
 
-                    <h1 className="section__heading">
-                        Welcome back.
-                    </h1>
-
-                    <p className="section__lede">
-                        Sign in to access the WolfHacks portal.
-                    </p>
-
-                    <form
-                        className="portal-login__form"
-                        onSubmit={handleLogin}
-                    >
                         <label>
                             Email
                             <input
                                 type="email"
                                 value={email}
-                                onChange={(e) =>
-                                    setEmail(e.target.value)
-                                }
+                                onChange={(e) => setEmail(e.target.value)}
                                 required
                             />
                         </label>
@@ -83,9 +80,7 @@ export default function PortalLogin() {
                             <input
                                 type="password"
                                 value={password}
-                                onChange={(e) =>
-                                    setPassword(e.target.value)
-                                }
+                                onChange={(e) => setPassword(e.target.value)}
                                 required
                             />
                         </label>
@@ -102,24 +97,15 @@ export default function PortalLogin() {
                         >
                             Continue with Discord
                         </button>
-                        
-                        {error && (
-                            <p className="portal-login__error">
-                                {error}
-                            </p>
-                        )}
 
                         <button
                             className="btn btn--primary"
                             type="submit"
                             disabled={loading}
                         >
-                            {loading
-                                ? 'Signing in...'
-                                : 'Sign in'}
+                            {loading ? 'Signing in...' : 'Sign in'}
                         </button>
                     </form>
-
                 </div>
             </div>
         </main>

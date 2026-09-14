@@ -420,13 +420,42 @@ def get_authenticated_user(authorization: str | None):
     return response.user
 
 @app.get("/api/auth/me")
-def auth_me(
-    authorization: str | None = Header(default=None)
-):
+def auth_me(authorization: str | None = Header(default=None)):
     user = get_authenticated_user(authorization)
+    
+    # Extract email and optional discord identity from Supabase user metadata
+    user_email = user.email
+    user_metadata = user.user_metadata or {}
+    discord_username = user_metadata.get("preferred_username") or user_metadata.get("custom_claims", {}).get("discord_username")
+    
+    # Check registration
+    is_registered = check_user_registration(email=user_email, discord_username=discord_username)
+    if not is_registered:
+        raise HTTPException(
+            status_code=403,
+            detail="Account not found in registration database. You must apply first."
+        )
 
     return {
         "authenticated": True,
         "user_id": user.id,
-        "email": user.email,
+        "email": user_email,
+        "registered": True,
     }
+
+def check_user_registration(email: str | None = None, discord_username: str | None = None) -> bool:
+    client = get_supabase_client()
+    if not client:
+        return False
+    
+    query = client.table(SUPABASE_APPLICATIONS_TABLE).select("email, discord_username")
+    if email and discord_username:
+        response = query.or_(f"email.eq.{email},discord_username.eq.{discord_username}").execute()
+    elif email:
+        response = query.eq("email", email).execute()
+    elif discord_username:
+        response = query.eq("discord_username", discord_username).execute()
+    else:
+        return False
+
+    return len(response.data) > 0
