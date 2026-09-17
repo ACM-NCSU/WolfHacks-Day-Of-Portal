@@ -9,6 +9,7 @@ import ApplyPage from './components/ApplyPage.jsx';
 import ThankYouPage from './components/ThankYouPage.jsx';
 import PortalLogin from './pages/PortalLogin.jsx';
 import Portal from './pages/Portal.jsx';
+import OrganizerPortal from './pages/OrganizerPortal.jsx';
 import UpdatePassword from './pages/UpdatePassword';
 
 export default function App() {
@@ -28,6 +29,10 @@ export default function App() {
 
   if (pathname === '/portal') {
     return <Portal />;
+  }
+
+  if (pathname === '/portal/organizer') {
+    return <OrganizerPortal />;
   }
 
   if (pathname === '/portal/setup-request') {
