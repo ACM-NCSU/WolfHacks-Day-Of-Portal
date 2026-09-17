@@ -9,6 +9,7 @@ import ApplyPage from './components/ApplyPage.jsx';
 import ThankYouPage from './components/ThankYouPage.jsx';
 import PortalLogin from './pages/PortalLogin.jsx';
 import Portal from './pages/Portal.jsx';
+import UpdatePassword from './pages/UpdatePassword';
 
 export default function App() {
   const pathname = window.location.pathname.replace(/\/$/, '');
@@ -27,6 +28,10 @@ export default function App() {
 
   if (pathname === '/portal') {
     return <Portal />;
+  }
+
+  if (pathname === '/portal/setup-request') {
+    return <UpdatePassword />;
   }
 
   return (

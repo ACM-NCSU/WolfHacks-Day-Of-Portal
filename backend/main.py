@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Literal
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Header, Request as FastAPIRequest
+from fastapi import FastAPI, HTTPException, Header, status, Request as FastAPIRequest
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -380,26 +380,28 @@ def create_application(application: Application):
         "message": "Application received",
     }
 
+class PasswordSetupRequest(BaseModel):
+    email: str = Field(min_length=5, max_length=254, pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
 def get_authenticated_user(authorization: str | None):
     if not authorization:
         raise HTTPException(
-            status_code=401,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required."
         )
 
     if not authorization.startswith("Bearer "):
         raise HTTPException(
-            status_code=401,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authorization header."
         )
 
     token = authorization[len("Bearer "):]
-
     supabase = get_supabase_client()
 
     if supabase is None:
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Supabase is not configured."
         )
 
@@ -407,48 +409,98 @@ def get_authenticated_user(authorization: str | None):
         response = supabase.auth.get_user(token)
     except Exception:
         raise HTTPException(
-            status_code=401,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired session."
         )
 
     if response.user is None:
         raise HTTPException(
-            status_code=401,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired session."
         )
 
     return response.user
 
-@app.get("/api/auth/me")
-def auth_me(authorization: str | None = Header(default=None)):
-    user = get_authenticated_user(authorization)
-    
-    # Extract email and optional discord identity from Supabase user metadata
-    user_email = user.email
-    user_metadata = user.user_metadata or {}
-    discord_username = user_metadata.get("preferred_username") or user_metadata.get("custom_claims", {}).get("discord_username")
-    
-    # Check registration
-    is_registered = check_user_registration(email=user_email, discord_username=discord_username)
-    if not is_registered:
-        raise HTTPException(
-            status_code=403,
-            detail="Account not found in registration database. You must apply first."
-        )
 
-    return {
-        "authenticated": True,
-        "user_id": user.id,
-        "email": user_email,
-        "registered": True,
-    }
+def get_and_backfill_user(
+    auth_user_id: str,
+    email: str | None = None,
+    discord_id: str | None = None,
+    discord_username: str | None = None
+) -> dict | None:
+    """
+    Finds an application record by auth_user_id, discord_id, email, or discord_username.
+    Automatically links auth_user_id and backfills discord_id upon successful identification.
+    """
+    client = get_supabase_client()
+    if not client:
+        return None
+
+    table = client.table(SUPABASE_APPLICATIONS_TABLE)
+
+    # Match by previously linked user_id
+    res = table.select("id, email, user_id, discord_id, role").eq("user_id", auth_user_id).execute()
+    if res.data:
+        return res.data[0]
+
+    # Match by previously filled Discord ID
+    if discord_id:
+        res = table.select("id, email, user_id, discord_id, role").eq("discord_id", discord_id).execute()
+        if res.data:
+            matched = res.data[0]
+            # Link auth_user_id if not linked yet
+            if not matched.get("user_id"):
+                try:
+                    table.update({"user_id": auth_user_id}).eq("id", matched["id"]).execute()
+                    matched["user_id"] = auth_user_id
+                except Exception:
+                    logger.exception("Failed linking user_id to app ID %s", matched["id"])
+            return matched
+
+    # Match by Email or Discord Username
+    conditions = []
+    if email:
+        conditions.append(f"email.eq.{email}")
+    if discord_username:
+        conditions.append(f"discord_username.eq.{discord_username}")
+
+    if not conditions:
+        return None
+
+    res = table.select("id, email, user_id, discord_id, discord_username, role").or_(",".join(conditions)).execute()
+    if not res.data:
+        return None
+
+    matched = res.data[0]
+    updates = {}
+
+    # Link user_id if missing
+    if not matched.get("user_id"):
+        updates["user_id"] = auth_user_id
+        matched["user_id"] = auth_user_id
+
+    # Backfill discord_id if missing and logging in via Discord
+    if discord_id and not matched.get("discord_id"):
+        updates["discord_id"] = discord_id
+        matched["discord_id"] = discord_id
+
+    if updates:
+        try:
+            table.update(updates).eq("id", matched["id"]).execute()
+            logger.info("Updated application ID %s with: %s", matched["id"], updates)
+        except Exception:
+            logger.exception("Failed to update backfill values for app ID %s", matched["id"])
+
+    return matched
+
 
 def check_user_registration(email: str | None = None, discord_username: str | None = None) -> bool:
+    """Verify an applicant exists prior to sending password setup links."""
     client = get_supabase_client()
     if not client:
         return False
-    
-    query = client.table(SUPABASE_APPLICATIONS_TABLE).select("email, discord_username")
+
+    query = client.table(SUPABASE_APPLICATIONS_TABLE).select("id")
     if email and discord_username:
         response = query.or_(f"email.eq.{email},discord_username.eq.{discord_username}").execute()
     elif email:
@@ -459,3 +511,116 @@ def check_user_registration(email: str | None = None, discord_username: str | No
         return False
 
     return len(response.data) > 0
+
+@app.get("/api/auth/me")
+def auth_me(authorization: str | None = Header(default=None)):
+    user = get_authenticated_user(authorization)
+
+    user_email = user.email
+    user_metadata = user.user_metadata or {}
+
+    provider = user.app_metadata.get("provider")
+    discord_id = user_metadata.get("sub") if provider == "discord" else None
+    discord_username = user_metadata.get("preferred_username") if provider == "discord" else None
+
+    # Retrieve record and update linked metadata fields
+    app_record = get_and_backfill_user(
+        auth_user_id=user.id,
+        email=user_email,
+        discord_id=discord_id,
+        discord_username=discord_username,
+    )
+
+    if not app_record:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account not found in registration database. You must apply first."
+        )
+
+    return {
+        "authenticated": True,
+        "user_id": user.id,
+        "email": user_email,
+        "role": app_record.get("role", "hacker"),
+        "registered": True,
+    }
+
+
+@app.post("/api/auth/request-password-setup")
+def request_password_setup(payload: PasswordSetupRequest):
+    # Enforce that they exist in the applications database first
+    if not check_user_registration(email=payload.email):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This email is not registered for WolfHacks. Please use the email you applied with."
+        )
+
+    supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Supabase is not configured."
+        )
+
+    try:
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+        response = supabase.auth.admin.generate_link({
+            "type": "recovery",
+            "email": payload.email,
+            "options": {
+                "redirect_to": f"{frontend_url}/portal/setup-login"
+            }
+        })
+
+        # In production, dispatch action_link via email service (e.g. Resend)
+        action_link = getattr(response.properties, "action_link", None) if hasattr(response, "properties") else None
+
+        return {
+            "message": "Password setup instructions generated.",
+            "debug_link": action_link if os.getenv("DEBUG") else None
+        }
+    except Exception as exc:
+        logger.exception("Failed generating password setup link for %s", payload.email)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+@app.post("/api/auth/verify-and-grant-access")
+def verify_and_grant_access(payload: PasswordSetupRequest):
+    email = payload.email.strip().lower()
+
+    # Enforce registration check in applications table
+    if not check_user_registration(email=email):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This email is not registered for WolfHacks. Please use the email you applied with."
+        )
+
+    supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Supabase client not configured."
+        )
+
+    try:
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
+        # Generate setup/recovery link without sending an email
+        link_response = supabase.auth.admin.generate_link({
+            "type": "recovery",
+            "email": email,
+            "options": {
+                "redirect_to": f"{frontend_url}/portal/setup-request"
+            }
+        })
+
+        # Extract action link generated by Supabase
+        action_link = link_response.properties.action_link
+
+        return {
+            "success": True,
+            "action_link": action_link
+        }
+
+    except Exception as exc:
+        logger.exception("Failed granting access link for %s", email)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))

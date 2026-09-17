@@ -85,6 +85,12 @@ export default function PortalLogin() {
                             />
                         </label>
 
+                        <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                            <a href="/portal/setup-request" style={{ fontSize: '0.85rem', color: 'inherit' }}>
+                                Set up your password
+                            </a>
+                        </div>
+
                         <div className="portal-login__divider">
                             <span>OR</span>
                         </div>
