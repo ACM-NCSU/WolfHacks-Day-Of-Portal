@@ -9,7 +9,15 @@ import useTeamState from '../hooks/useTeamState.js';
 
 export default function TeamDashboard() {
   const { participant, status: sessionStatus, login, logout } = useSession();
-  const { team, incomingInvites, outgoingInvites, hasLoadedOnce, refresh } = useTeamState(participant);
+  const {
+    team,
+    incomingInvites,
+    outgoingInvites,
+    hasLoadedOnce,
+    setTeam,
+    setIncomingInvites,
+    setOutgoingInvites,
+  } = useTeamState(participant);
 
   const eyebrow = sessionStatus === 'authenticated' ? 'YOUR TEAM' : 'TEAM DASHBOARD';
   let heading = 'Find your team.';
@@ -47,12 +55,18 @@ export default function TeamDashboard() {
                 team={team}
                 participant={participant}
                 outgoingInvites={outgoingInvites}
-                onChanged={refresh}
+                onTeamUpdate={setTeam}
+                setOutgoingInvites={setOutgoingInvites}
               />
             ) : (
               <>
-                <PendingInvites mode="incoming" invites={incomingInvites} onChanged={refresh} />
-                <TeamCreateCard onChanged={refresh} />
+                <PendingInvites
+                  mode="incoming"
+                  invites={incomingInvites}
+                  setInvites={setIncomingInvites}
+                  onAccepted={setTeam}
+                />
+                <TeamCreateCard onCreated={setTeam} />
                 <p className="section__lede">
                   A team leader can also add you by searching your name or email.
                 </p>

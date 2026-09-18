@@ -4,20 +4,27 @@ import { acceptInvite, cancelInvite, declineInvite } from '../lib/teamApi.js';
 // One component for both directions -- same row shape, different actions --
 // rather than an Incoming/Outgoing pair. mode="incoming" is screen 3 (accept
 // / decline); mode="outgoing" is the leader's "Sent invites" block on screen 5.
-export default function PendingInvites({ mode, invites, onChanged }) {
+export default function PendingInvites({ mode, invites, setInvites, onAccepted }) {
   const [pendingActionId, setPendingActionId] = useState(null);
   const [error, setError] = useState('');
 
   if (invites.length === 0) return null;
 
-  async function act(inviteId, action) {
-    setPendingActionId(inviteId);
+  // Optimistic: drop the row immediately, put it back if the call fails --
+  // same shape as TrackChallengePicker's track/challenge writes. Accepting
+  // additionally clears the whole incoming list on success, since
+  // accept_team_invite already cancels the accepter's other pending invites
+  // server-side -- there's nothing stale left to show.
+  async function act(invite, run) {
+    const previous = invites;
+    setPendingActionId(invite.id);
     setError('');
+    setInvites(invites.filter((i) => i.id !== invite.id));
     try {
-      await action();
-      await onChanged();
+      await run();
     } catch (err) {
       console.error(err);
+      setInvites(previous);
       setError(err.message || 'That action failed. Please try again.');
     } finally {
       setPendingActionId(null);
@@ -46,7 +53,7 @@ export default function PendingInvites({ mode, invites, onChanged }) {
                       className="btn btn--ghost"
                       type="button"
                       disabled={busy}
-                      onClick={() => act(invite.id, () => declineInvite(invite.id))}
+                      onClick={() => act(invite, () => declineInvite(invite.id))}
                     >
                       Decline
                     </button>
@@ -54,7 +61,13 @@ export default function PendingInvites({ mode, invites, onChanged }) {
                       className="btn btn--primary"
                       type="button"
                       disabled={busy}
-                      onClick={() => act(invite.id, () => acceptInvite(invite.id))}
+                      onClick={() =>
+                        act(invite, async () => {
+                          const team = await acceptInvite(invite.id);
+                          setInvites([]);
+                          onAccepted(team);
+                        })
+                      }
                     >
                       {busy ? 'Working...' : 'Accept'}
                     </button>
@@ -71,7 +84,7 @@ export default function PendingInvites({ mode, invites, onChanged }) {
                       className="btn btn--ghost"
                       type="button"
                       disabled={busy}
-                      onClick={() => act(invite.id, () => cancelInvite(invite.team_id, invite.id))}
+                      onClick={() => act(invite, () => cancelInvite(invite.team_id, invite.id))}
                     >
                       {busy ? 'Working...' : 'Cancel'}
                     </button>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createTeam } from '../lib/teamApi.js';
 
-export default function TeamCreateCard({ onChanged }) {
+export default function TeamCreateCard({ onCreated }) {
   const [name, setName] = useState('');
   const [status, setStatus] = useState('idle'); // 'idle' | 'submitting' | 'error'
   const [error, setError] = useState('');
@@ -17,10 +17,10 @@ export default function TeamCreateCard({ onChanged }) {
     setStatus('submitting');
     setError('');
     try {
-      await createTeam(name);
+      const created = await createTeam(name);
       setName('');
       setStatus('idle');
-      await onChanged();
+      onCreated(created);
     } catch (err) {
       console.error(err);
       setError(err.message || 'Could not create the team. Please try again.');

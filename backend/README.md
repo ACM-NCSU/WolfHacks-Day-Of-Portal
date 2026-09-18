@@ -98,17 +98,49 @@ relative path, so requests are same-origin and never trigger CORS.
 ## Team dashboard (issue #4)
 
 `auth_stub.py` and `teams.py` add the endpoints behind the `/team` page in
-the frontend. Persistence is **in-memory** for now (`repository.py`) — no
-Supabase table or credentials are needed to run any of this locally; state
-just resets when `uvicorn` restarts. Set `WOLFHACKS_SESSION_SECRET` in `.env`
-(any string for local dev) or the stub login falls back to an insecure
-default and logs a warning.
+the frontend. Persistence is **Supabase Postgres** (`repository.py`) as of
+Phase 4 — team identity is the existing `applications` table (the columns
+`checked_in`, `user_id`, `discord_id`, `role` come from issues #1 and #5;
+this repo reads them and never writes them). There is no separate
+`participants` table.
 
-Seeded accounts (same ones the frontend mock uses, see `plan.md` "How to test
-Phase 2"): `jordan@ncsu.edu` leads "Wolfpack Coders", `taylor@ncsu.edu` is a
-member, `alex@ncsu.edu` has a pending invite, `sam@ncsu.edu` /
-`morgan@ncsu.edu` are checked in with no team, `casey@ncsu.edu` is registered
-but not checked in.
+Team tables (`teams`, `team_members`, `team_invites`) and the
+`participant_directory` view live in `backend/supabase_dev_bootstrap.sql`.
+Run `supabase_schema.sql` then `supabase_dev_bootstrap.sql` then
+`seed_dev_data.sql` in a **dev** Supabase project's SQL editor — never the
+shared production one — then set `SUPABASE_URL` /
+`SUPABASE_SERVICE_ROLE_KEY` in `.env` to that dev project. See
+`docs/testing-team-dashboard.md` for the full walkthrough.
+
+Set `WOLFHACKS_SESSION_SECRET` in `.env` (any string for local dev) or the
+stub login falls back to an insecure default and logs a warning. The stub
+itself (`auth_stub.py`) is unchanged by this — only its lookup now hits
+Supabase instead of an in-memory list.
+
+Seeded accounts (`backend/seed_dev_data.sql`): `jordan@ncsu.edu` leads
+"Wolfpack Coders", `taylor@ncsu.edu` is a member, `alex@ncsu.edu` has a
+pending invite, `sam@ncsu.edu` / `morgan@ncsu.edu` are checked in with no
+team, `casey@ncsu.edu` is registered but not checked in.
+
+Live updates on `/team` are done by the frontend polling `GET /api/team/me`
+every ~10s, not Supabase Realtime — see plan.md Phase 4 for why.
+
+**Responsiveness pass (post-Phase-4):** testing against a real dev project
+surfaced two problems, both fixed. First, a real bug — `useTeamState.js`'s
+staleness guard didn't invalidate in-flight requests on logout, so a slow
+response from a just-logged-out session could briefly render under the next
+person's login; fixed by bumping its sequence counter unconditionally.
+Second, every action felt sluggish because of sheer round-trip count: each
+Supabase call built a brand-new client (repeated TLS handshakes), and four
+mutating endpoints fetched the *entire* team state just to check who the
+leader was. `repository.py` now reuses one client for the process lifetime
+and exposes `get_team_role()`, a 2-query leadership check, in place of that.
+The frontend mirrors this: every mutation (create, invite, accept, decline,
+cancel, leave, track/challenge changes) now applies the backend's own
+response directly to local state instead of triggering a second full
+refetch — see `useTeamState.js`'s `setTeam`/`setIncomingInvites`/
+`setOutgoingInvites`, which are identity-guarded so a mutation response
+can't reopen the same cross-session staleness bug through a different path.
 
 ```bash
 # Log in and grab a token

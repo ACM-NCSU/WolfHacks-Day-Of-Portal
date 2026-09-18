@@ -7,7 +7,7 @@ import { leaveTeam } from '../lib/teamApi.js';
 
 const { tracks, challenges } = siteConfig.event;
 
-export default function TeamOverview({ team, participant, outgoingInvites, onChanged }) {
+export default function TeamOverview({ team, participant, outgoingInvites, onTeamUpdate, setOutgoingInvites }) {
   const [confirmingLeave, setConfirmingLeave] = useState(false);
   const [leaveStatus, setLeaveStatus] = useState('idle'); // 'idle' | 'submitting' | 'error'
   const [error, setError] = useState('');
@@ -23,7 +23,10 @@ export default function TeamOverview({ team, participant, outgoingInvites, onCha
     setError('');
     try {
       await leaveTeam(team.id);
-      await onChanged();
+      // Either {deleted: true} or {deleted: false, team: {...}} -- either
+      // way MY team is now null, and my team's sent invites went with it.
+      setOutgoingInvites([]);
+      onTeamUpdate(null);
     } catch (err) {
       console.error(err);
       setError('Could not leave the team. Please try again.');
@@ -90,9 +93,9 @@ export default function TeamOverview({ team, participant, outgoingInvites, onCha
 
       {isLeader && (
         <>
-          <TrackChallengePicker team={team} onChanged={onChanged} />
-          <InviteSearch team={team} onChanged={onChanged} />
-          <PendingInvites mode="outgoing" invites={outgoingInvites} onChanged={onChanged} />
+          <TrackChallengePicker team={team} onTeamUpdate={onTeamUpdate} />
+          <InviteSearch team={team} outgoingInvites={outgoingInvites} setOutgoingInvites={setOutgoingInvites} />
+          <PendingInvites mode="outgoing" invites={outgoingInvites} setInvites={setOutgoingInvites} />
         </>
       )}
     </>

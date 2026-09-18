@@ -3,7 +3,7 @@ import { inviteParticipant, searchParticipants } from '../lib/teamApi.js';
 
 const MAX_TEAM_SIZE = 4;
 
-export default function InviteSearch({ team, onChanged }) {
+export default function InviteSearch({ team, outgoingInvites, setOutgoingInvites }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
@@ -24,22 +24,40 @@ export default function InviteSearch({ team, onChanged }) {
   useEffect(() => {
     if (full || !query.trim()) {
       setResults([]);
-      return;
+      return undefined;
     }
     let cancelled = false;
-    searchParticipants(query).then((found) => {
-      if (!cancelled) setResults(found);
-    });
-    return () => { cancelled = true; };
+    // Debounce -- this now hits a real database per search, not an
+    // in-memory list, so one request per keystroke isn't free anymore.
+    const timeoutId = setTimeout(() => {
+      searchParticipants(query)
+        .then((found) => {
+          if (cancelled) return;
+          setResults(found);
+          setError('');
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          console.error('Participant search failed:', err);
+          setResults([]);
+          setError('Search is temporarily unavailable. Please try again.');
+        });
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, [query, full]);
 
   async function invite(target) {
     setInvitingId(target.id);
     setError('');
     try {
-      await inviteParticipant(team.id, target.id);
+      const invite = await inviteParticipant(team.id, target.id);
       setResults((current) => current.filter((r) => r.id !== target.id));
-      await onChanged();
+      // Filter-then-append guards against a poll landing between the POST
+      // and its response and already containing this row.
+      setOutgoingInvites([...outgoingInvites.filter((i) => i.id !== invite.id), invite]);
     } catch (err) {
       console.error(err);
       setError(err.message || 'Could not send that invite. Please try again.');
