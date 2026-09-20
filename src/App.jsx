@@ -11,6 +11,7 @@ import PortalLogin from './pages/PortalLogin.jsx';
 import Portal from './pages/Portal.jsx';
 import OrganizerPortal from './pages/OrganizerPortal.jsx';
 import UpdatePassword from './pages/UpdatePassword';
+import CheckInPage from './components/CheckInPage.jsx';
 
 export default function App() {
   const pathname = window.location.pathname.replace(/\/$/, '');
@@ -37,6 +38,10 @@ export default function App() {
 
   if (pathname === '/portal/setup-request') {
     return <UpdatePassword />;
+  }
+
+  if (pathname === '/checkin') {
+    return <CheckInPage />;
   }
 
   return (

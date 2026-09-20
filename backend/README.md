@@ -39,6 +39,21 @@ curl http://127.0.0.1:8000/api/health
 
 Applications are submitted as JSON to `POST /api/applications` and appended to the configured Google Sheet. Create an `Applications` worksheet with this header row:
 
+### Day-of check-in
+
+Staff-facing endpoints for confirming a registrant at the door, backed by the
+`checked_in` / `checked_in_at` columns in Supabase (see `supabase_schema.sql`).
+Search and check-in require the `X-Staff-Key` header to match `STAFF_CHECKIN_KEY`:
+
+- `GET /api/checkin/search?q=...` — searches by email (exact, case-insensitive)
+  if `q` contains `@`, otherwise by name. Returns matching registrants.
+- `POST /api/checkin/{id}` — marks a registrant checked in.
+- `GET /api/checkin/verify?email=...` — unauthenticated, returns
+  `{"checked_in": true|false}` only. This is the hook the day-of portal's
+  login should call: a registrant who submitted an application but was never
+  checked in at the event must not be able to log in.
+
+
 ```text
 Submitted at | First name | Middle Name | Last name | Age | Email | Country Of Residence | Discord Username | Phone number | Currently enrolled | University | Classification | Major | Hackathon before | Gender | Other gender | Pronouns | Other pronouns | Dietary Restrictions | Other dietary restrictions | MLH Code of Conduct | MLH Data Authorization | MLH Marketing Emails
 ```
