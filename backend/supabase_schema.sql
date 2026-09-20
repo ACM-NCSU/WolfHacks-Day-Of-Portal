@@ -71,3 +71,12 @@ alter table applications alter column classification drop default;
 -- optional LinkedIn URL field for connecting applicants with sponsors.
 alter table applications add column if not exists major_other text default '';
 alter table applications add column if not exists linkedin_url text default '';
+
+-- Day-of check-in: staff mark a registrant checked_in at the event, which is
+-- the sole gate the day-of portal login should check (no check-in = no
+-- portal access). checked_in_at is left null until check-in happens.
+alter table applications add column if not exists checked_in boolean not null default false;
+alter table applications add column if not exists checked_in_at timestamptz;
+
+-- Case-insensitive email is the primary lookup path for check-in search.
+create index if not exists applications_email_lower_idx on applications (lower(email));

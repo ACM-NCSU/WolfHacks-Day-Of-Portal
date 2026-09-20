@@ -41,6 +41,7 @@ export default function Footer() {
         <div className="footer__links-col">
           <nav className="footer__links" aria-label="Footer">
             <a href="#faq">FAQ</a>
+            <a href="/checkin">Staff Check-In</a>
           </nav>
 
           <div className="footer__contact">

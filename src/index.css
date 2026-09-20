@@ -320,6 +320,24 @@ a.acm-mention:hover { text-decoration: underline; }
 .application-form__checkbox a { color: var(--paper); text-decoration: underline; text-underline-offset: 2px; }
 .application-form__checkbox a:hover { color: var(--red); }
 .apply-success { max-width: 680px; padding: 48px 0; }
+
+/* ---------- Check-in ---------- */
+
+.checkin-page label { display: flex; flex-direction: column; gap: 7px; margin-bottom: 22px; color: var(--paper); font-family: var(--font-mono); font-size: 13px; }
+.checkin-page input { width: 100%; border: 1px solid var(--line); border-radius: 2px; padding: 12px 13px; background: var(--ink-raised); color: var(--paper); font: 16px var(--font-body); }
+.checkin-page input:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+.checkin-page__key { max-width: 360px; }
+.checkin-page__search { display: flex; align-items: flex-end; gap: 14px; max-width: 520px; }
+.checkin-page__search label { flex: 1; margin-bottom: 0; }
+.checkin-page__search button { margin-bottom: 22px; }
+.checkin-page__empty { color: var(--steel-dark); font-family: var(--font-body); font-size: 14px; margin-top: 8px; }
+.checkin-page__results { list-style: none; margin: 24px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.checkin-page__result { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px; border: 1px solid var(--line); background: var(--card); }
+.checkin-page__result-info { display: flex; flex-direction: column; gap: 3px; }
+.checkin-page__result-name { font-family: var(--font-body); font-weight: 600; color: var(--paper); }
+.checkin-page__result-email { font-family: var(--font-mono); font-size: 13px; color: var(--steel-dark); }
+.checkin-page__badge { font-family: var(--font-mono); font-size: 12px; padding: 6px 12px; border-radius: 2px; white-space: nowrap; }
+.checkin-page__badge--done { background: rgba(70, 180, 100, 0.15); color: #4cbf6f; border: 1px solid rgba(70, 180, 100, 0.4); }
 .apply-success .btn { margin-top: 28px; }
 
 @media (max-width: 640px) {

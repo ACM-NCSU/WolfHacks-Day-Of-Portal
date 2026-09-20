@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Literal
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Header, status, Request as FastAPIRequest
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, status, Request as FastAPIRequest
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -112,6 +112,11 @@ SHEETS_RANGE = os.getenv("GOOGLE_SHEETS_RANGE", "Applications!A:X")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 SUPABASE_APPLICATIONS_TABLE = os.getenv("SUPABASE_APPLICATIONS_TABLE", "applications")
+
+# Shared secret staff enter in the check-in tool. Not a real auth system --
+# just enough to keep the check-in/search endpoints from being open to
+# anyone who finds the URL. Rotate by changing the env var.
+STAFF_CHECKIN_KEY = os.getenv("STAFF_CHECKIN_KEY", "")
 
 app.add_middleware(
     CORSMiddleware,
@@ -624,3 +629,120 @@ def verify_and_grant_access(payload: PasswordSetupRequest):
     except Exception as exc:
         logger.exception("Failed granting access link for %s", email)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+
+# --- Day-of check-in ---
+#
+# Staff-facing lookup + check-in for registrants already in the `applications`
+# table. Checking someone in is the only thing that should let them log into
+# the day-of portal later: `GET /api/checkin/verify` is the hook the portal's
+# login should call to enforce that gate (unchecked-in registrants are not
+# participants and must not be able to log in).
+
+REGISTRANT_FIELDS = "id, first_name, last_name, email, checked_in, checked_in_at"
+
+
+class Registrant(BaseModel):
+    id: str
+    first_name: str
+    last_name: str
+    email: str
+    checked_in: bool
+    checked_in_at: str | None = None
+
+
+def require_staff_key(x_staff_key: str = Header(default="")):
+    if not STAFF_CHECKIN_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="Check-in is not configured: set STAFF_CHECKIN_KEY on the backend",
+        )
+    if x_staff_key != STAFF_CHECKIN_KEY:
+        raise HTTPException(status_code=401, detail="Invalid or missing staff key")
+
+
+def _require_supabase():
+    client = get_supabase_client()
+    if client is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Supabase is not configured: set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY",
+        )
+    return client
+
+
+def _ilike_pattern(term: str) -> str:
+    # Escape PostgREST/SQL LIKE wildcards in user input before wrapping it in
+    # our own wildcards, so a search for "50% off" or "a_b" can't widen the match.
+    escaped = term.replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
+    return f"%{escaped}%"
+
+
+@app.get("/api/checkin/search", response_model=list[Registrant])
+def search_registrants(
+    q: str = Query(min_length=1, max_length=254),
+    _: None = Depends(require_staff_key),
+):
+    client = _require_supabase()
+    table = client.table(SUPABASE_APPLICATIONS_TABLE)
+    query = q.strip()
+
+    if "@" in query:
+        # Email is the unique identifier, so treat it as an exact
+        # (case-insensitive) lookup rather than a fuzzy match.
+        result = table.select(REGISTRANT_FIELDS).ilike("email", query).limit(5).execute()
+        return result.data
+
+    # Fall back to name search: require every whitespace-separated token to
+    # appear somewhere in the first/last name, without building a raw
+    # PostgREST filter string out of user input.
+    tokens = [t for t in query.split() if t]
+    candidates: dict[str, dict] = {}
+    for token in tokens:
+        pattern = _ilike_pattern(token)
+        for column in ("first_name", "last_name"):
+            rows = table.select(REGISTRANT_FIELDS).ilike(column, pattern).limit(50).execute().data
+            for row in rows:
+                candidates[row["id"]] = row
+
+    def matches_all_tokens(row: dict) -> bool:
+        haystack = f"{row['first_name']} {row['last_name']}".lower()
+        return all(token.lower() in haystack for token in tokens)
+
+    return [row for row in candidates.values() if matches_all_tokens(row)][:20]
+
+
+@app.post("/api/checkin/{registrant_id}", response_model=Registrant)
+def check_in_registrant(registrant_id: str, _: None = Depends(require_staff_key)):
+    client = _require_supabase()
+    now = datetime.now(timezone.utc).isoformat()
+
+    result = (
+        client.table(SUPABASE_APPLICATIONS_TABLE)
+        .update({"checked_in": True, "checked_in_at": now})
+        .eq("id", registrant_id)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Registrant not found")
+
+    row = result.data[0]
+    logger.info("Checked in registrant %s <%s>", registrant_id, row.get("email"))
+    return row
+
+
+@app.get("/api/checkin/verify")
+def verify_checked_in(email: str = Query(min_length=5, max_length=254)):
+    # Intentionally unauthenticated (unlike search/check-in above): this is
+    # the endpoint the day-of portal's login flow calls to decide whether an
+    # email may log in. It only ever returns a boolean, never registrant data.
+    client = _require_supabase()
+    result = (
+        client.table(SUPABASE_APPLICATIONS_TABLE)
+        .select("checked_in")
+        .ilike("email", email.strip())
+        .limit(1)
+        .execute()
+    )
+    checked_in = bool(result.data and result.data[0]["checked_in"])
+    return {"checked_in": checked_in}
