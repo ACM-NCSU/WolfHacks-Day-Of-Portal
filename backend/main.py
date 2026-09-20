@@ -8,7 +8,12 @@ from datetime import datetime, timezone
 from typing import Literal
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request as FastAPIRequest
+
+# Must run before importing db (and anything that imports db) -- those
+# modules read SUPABASE_URL/etc. from the environment at import time.
+load_dotenv()
+
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request as FastAPIRequest
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,9 +22,13 @@ from pydantic import BaseModel, Field, model_validator
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from supabase import create_client
 
-load_dotenv()
+from db import get_supabase_client, escape_ilike, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_APPLICATIONS_TABLE
+from auth import router as auth_router
+# teams_router intentionally not mounted -- a teammate owns the team dashboard
+# feature separately; backend/teams.py is left in place, ready to re-enable.
+from schedule import router as schedule_router
+from announcements import router as announcements_router
 
 _log_formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
 
@@ -106,12 +115,14 @@ SPREADSHEET_ID = os.getenv(
 )
 SHEETS_RANGE = os.getenv("GOOGLE_SHEETS_RANGE", "Applications!A:X")
 
-# Supabase connection fields. Writes go through the service role key so they
-# bypass RLS from the backend the same way the Sheets append bypasses sharing
-# permissions via the service account.
-SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
-SUPABASE_APPLICATIONS_TABLE = os.getenv("SUPABASE_APPLICATIONS_TABLE", "applications")
+# Shared secret staff enter in the check-in tool. Not a real auth system --
+# just enough to keep the check-in/search endpoints from being open to
+# anyone who finds the URL. Rotate by changing the env var.
+STAFF_CHECKIN_KEY = os.getenv("STAFF_CHECKIN_KEY", "")
+
+app.include_router(auth_router)
+app.include_router(schedule_router)
+app.include_router(announcements_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -262,12 +273,6 @@ def get_sheets_service():
     return build("sheets", "v4", credentials=credentials, cache_discovery=False)
 
 
-def get_supabase_client():
-    if not (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY):
-        return None
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-
-
 def write_to_supabase(application: Application):
     client = get_supabase_client()
     if client is None:
@@ -379,3 +384,115 @@ def create_application(application: Application):
         "updated_range": updated_range,
         "message": "Application received",
     }
+
+# --- Day-of check-in (staff tool) ---
+#
+# Staff-facing lookup + check-in for registrants already in the `applications`
+# table. This is deliberately NOT tied to hacker/organizer accounts -- staff
+# share one key, entered once in the /checkin tool. Checking someone in is
+# what then lets auth.get_current_participant let them log into the portal.
+
+REGISTRANT_FIELDS = "id, first_name, last_name, email, checked_in, checked_in_at"
+
+
+class Registrant(BaseModel):
+    id: str
+    first_name: str
+    last_name: str
+    email: str
+    checked_in: bool
+    checked_in_at: str | None = None
+
+
+def require_staff_key(x_staff_key: str = Header(default="")):
+    if not STAFF_CHECKIN_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="Check-in is not configured: set STAFF_CHECKIN_KEY on the backend",
+        )
+    if x_staff_key != STAFF_CHECKIN_KEY:
+        raise HTTPException(status_code=401, detail="Invalid or missing staff key")
+
+
+def _require_supabase():
+    client = get_supabase_client()
+    if client is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Supabase is not configured: set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY",
+        )
+    return client
+
+
+def _ilike_pattern(term: str) -> str:
+    return f"%{escape_ilike(term)}%"
+
+
+@app.get("/api/checkin/search", response_model=list[Registrant])
+def search_registrants(
+    q: str = Query(min_length=1, max_length=254),
+    _: None = Depends(require_staff_key),
+):
+    client = _require_supabase()
+    table = client.table(SUPABASE_APPLICATIONS_TABLE)
+    query = q.strip()
+
+    if "@" in query:
+        # Email is the unique identifier, so treat it as an exact
+        # (case-insensitive) lookup rather than a fuzzy match.
+        result = table.select(REGISTRANT_FIELDS).ilike("email", query).limit(5).execute()
+        return result.data
+
+    # Fall back to name search: require every whitespace-separated token to
+    # appear somewhere in the first/last name, without building a raw
+    # PostgREST filter string out of user input.
+    tokens = [t for t in query.split() if t]
+    candidates: dict[str, dict] = {}
+    for token in tokens:
+        pattern = _ilike_pattern(token)
+        for column in ("first_name", "last_name"):
+            rows = table.select(REGISTRANT_FIELDS).ilike(column, pattern).limit(50).execute().data
+            for row in rows:
+                candidates[row["id"]] = row
+
+    def matches_all_tokens(row: dict) -> bool:
+        haystack = f"{row['first_name']} {row['last_name']}".lower()
+        return all(token.lower() in haystack for token in tokens)
+
+    return [row for row in candidates.values() if matches_all_tokens(row)][:20]
+
+
+@app.post("/api/checkin/{registrant_id}", response_model=Registrant)
+def check_in_registrant(registrant_id: str, _: None = Depends(require_staff_key)):
+    client = _require_supabase()
+    now = datetime.now(timezone.utc).isoformat()
+
+    result = (
+        client.table(SUPABASE_APPLICATIONS_TABLE)
+        .update({"checked_in": True, "checked_in_at": now})
+        .eq("id", registrant_id)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Registrant not found")
+
+    row = result.data[0]
+    logger.info("Checked in registrant %s <%s>", registrant_id, row.get("email"))
+    return row
+
+
+@app.get("/api/checkin/verify")
+def verify_checked_in(email: str = Query(min_length=5, max_length=254)):
+    # Intentionally unauthenticated (unlike search/check-in above): kept for
+    # any client that wants a plain boolean without a full participant
+    # lookup. auth.get_current_participant enforces the actual login gate.
+    client = _require_supabase()
+    result = (
+        client.table(SUPABASE_APPLICATIONS_TABLE)
+        .select("checked_in")
+        .ilike("email", email.strip())
+        .limit(1)
+        .execute()
+    )
+    checked_in = bool(result.data and result.data[0]["checked_in"])
+    return {"checked_in": checked_in}

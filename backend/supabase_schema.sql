@@ -71,3 +71,25 @@ alter table applications alter column classification drop default;
 -- optional LinkedIn URL field for connecting applicants with sponsors.
 alter table applications add column if not exists major_other text default '';
 alter table applications add column if not exists linkedin_url text default '';
+
+-- Portal login (feature/log-in-flow): links an applications row to its
+-- Supabase auth user, backfills the Discord identity used to sign in, and
+-- assigns a role for the portal's hacker/organizer/admin gating. main.py's
+-- get_and_backfill_user() reads/writes user_id and discord_id; auth_me()
+-- reads role. New applicants default to 'hacker'; promote organizers/admins
+-- by hand in the table editor.
+alter table applications add column if not exists user_id uuid references auth.users(id);
+alter table applications add column if not exists discord_id text;
+alter table applications add column if not exists role text not null default 'hacker';
+create unique index if not exists applications_user_id_key on applications(user_id) where user_id is not null;
+create unique index if not exists applications_discord_id_key on applications(discord_id) where discord_id is not null;
+
+-- Day-of check-in (feature/event-check-in): staff mark a registrant
+-- checked_in at the event. auth.get_current_participant() enforces this as
+-- the portal login gate -- hackers must be checked in, organizers/admins
+-- are exempt. checked_in_at is left null until check-in happens.
+alter table applications add column if not exists checked_in boolean not null default false;
+alter table applications add column if not exists checked_in_at timestamptz;
+
+-- Case-insensitive email is the primary lookup path for check-in search.
+create index if not exists applications_email_lower_idx on applications (lower(email));
