@@ -8,6 +8,11 @@ from datetime import datetime, timezone
 from typing import Literal
 
 from dotenv import load_dotenv
+
+# Must run before importing db (and anything that imports db) -- those
+# modules read SUPABASE_URL/etc. from the environment at import time.
+load_dotenv()
+
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, status, Request as FastAPIRequest
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
@@ -17,9 +22,13 @@ from pydantic import BaseModel, Field, model_validator
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from supabase import create_client
 
-load_dotenv()
+from db import get_supabase_client, escape_ilike, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_APPLICATIONS_TABLE
+from auth import router as auth_router
+# teams_router intentionally not mounted -- a teammate owns the team dashboard
+# feature separately; backend/teams.py is left in place, ready to re-enable.
+from schedule import router as schedule_router
+from announcements import router as announcements_router
 
 _log_formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
 
@@ -106,12 +115,14 @@ SPREADSHEET_ID = os.getenv(
 )
 SHEETS_RANGE = os.getenv("GOOGLE_SHEETS_RANGE", "Applications!A:X")
 
-# Supabase connection fields. Writes go through the service role key so they
-# bypass RLS from the backend the same way the Sheets append bypasses sharing
-# permissions via the service account.
-SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
-SUPABASE_APPLICATIONS_TABLE = os.getenv("SUPABASE_APPLICATIONS_TABLE", "applications")
+# Shared secret staff enter in the check-in tool. Not a real auth system --
+# just enough to keep the check-in/search endpoints from being open to
+# anyone who finds the URL. Rotate by changing the env var.
+STAFF_CHECKIN_KEY = os.getenv("STAFF_CHECKIN_KEY", "")
+
+app.include_router(auth_router)
+app.include_router(schedule_router)
+app.include_router(announcements_router)
 
 # Shared secret staff enter in the check-in tool. Not a real auth system --
 # just enough to keep the check-in/search endpoints from being open to
@@ -267,12 +278,6 @@ def get_sheets_service():
     return build("sheets", "v4", credentials=credentials, cache_discovery=False)
 
 
-def get_supabase_client():
-    if not (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY):
-        return None
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-
-
 def write_to_supabase(application: Application):
     client = get_supabase_client()
     if client is None:
@@ -385,259 +390,12 @@ def create_application(application: Application):
         "message": "Application received",
     }
 
-class PasswordSetupRequest(BaseModel):
-    email: str = Field(min_length=5, max_length=254, pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
-
-def get_authenticated_user(authorization: str | None):
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required."
-        )
-
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authorization header."
-        )
-
-    token = authorization[len("Bearer "):]
-    supabase = get_supabase_client()
-
-    if supabase is None:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Supabase is not configured."
-        )
-
-    try:
-        response = supabase.auth.get_user(token)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired session."
-        )
-
-    if response.user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired session."
-        )
-
-    return response.user
-
-
-def get_and_backfill_user(
-    auth_user_id: str,
-    email: str | None = None,
-    discord_id: str | None = None,
-    discord_username: str | None = None
-) -> dict | None:
-    """
-    Finds an application record by auth_user_id, discord_id, email, or discord_username.
-    Automatically links auth_user_id and backfills discord_id upon successful identification.
-    """
-    client = get_supabase_client()
-    if not client:
-        return None
-
-    table = client.table(SUPABASE_APPLICATIONS_TABLE)
-
-    # Match by previously linked user_id
-    res = table.select("id, email, user_id, discord_id, role").eq("user_id", auth_user_id).execute()
-    if res.data:
-        return res.data[0]
-
-    # Match by previously filled Discord ID
-    if discord_id:
-        res = table.select("id, email, user_id, discord_id, role").eq("discord_id", discord_id).execute()
-        if res.data:
-            matched = res.data[0]
-            # Link auth_user_id if not linked yet
-            if not matched.get("user_id"):
-                try:
-                    table.update({"user_id": auth_user_id}).eq("id", matched["id"]).execute()
-                    matched["user_id"] = auth_user_id
-                except Exception:
-                    logger.exception("Failed linking user_id to app ID %s", matched["id"])
-            return matched
-
-    # Match by Email or Discord Username
-    conditions = []
-    if email:
-        conditions.append(f"email.eq.{email}")
-    if discord_username:
-        conditions.append(f"discord_username.eq.{discord_username}")
-
-    if not conditions:
-        return None
-
-    res = table.select("id, email, user_id, discord_id, discord_username, role").or_(",".join(conditions)).execute()
-    if not res.data:
-        return None
-
-    matched = res.data[0]
-    updates = {}
-
-    # Link user_id if missing
-    if not matched.get("user_id"):
-        updates["user_id"] = auth_user_id
-        matched["user_id"] = auth_user_id
-
-    # Backfill discord_id if missing and logging in via Discord
-    if discord_id and not matched.get("discord_id"):
-        updates["discord_id"] = discord_id
-        matched["discord_id"] = discord_id
-
-    if updates:
-        try:
-            table.update(updates).eq("id", matched["id"]).execute()
-            logger.info("Updated application ID %s with: %s", matched["id"], updates)
-        except Exception:
-            logger.exception("Failed to update backfill values for app ID %s", matched["id"])
-
-    return matched
-
-
-def check_user_registration(email: str | None = None, discord_username: str | None = None) -> bool:
-    """Verify an applicant exists prior to sending password setup links."""
-    client = get_supabase_client()
-    if not client:
-        return False
-
-    query = client.table(SUPABASE_APPLICATIONS_TABLE).select("id")
-    if email and discord_username:
-        response = query.or_(f"email.eq.{email},discord_username.eq.{discord_username}").execute()
-    elif email:
-        response = query.eq("email", email).execute()
-    elif discord_username:
-        response = query.eq("discord_username", discord_username).execute()
-    else:
-        return False
-
-    return len(response.data) > 0
-
-@app.get("/api/auth/me")
-def auth_me(authorization: str | None = Header(default=None)):
-    user = get_authenticated_user(authorization)
-
-    user_email = user.email
-    user_metadata = user.user_metadata or {}
-
-    provider = user.app_metadata.get("provider")
-    discord_id = user_metadata.get("sub") if provider == "discord" else None
-    discord_username = user_metadata.get("preferred_username") if provider == "discord" else None
-
-    # Retrieve record and update linked metadata fields
-    app_record = get_and_backfill_user(
-        auth_user_id=user.id,
-        email=user_email,
-        discord_id=discord_id,
-        discord_username=discord_username,
-    )
-
-    if not app_record:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account not found in registration database. You must apply first."
-        )
-
-    return {
-        "authenticated": True,
-        "user_id": user.id,
-        "email": user_email,
-        "role": app_record.get("role", "hacker"),
-        "registered": True,
-    }
-
-
-@app.post("/api/auth/request-password-setup")
-def request_password_setup(payload: PasswordSetupRequest):
-    # Enforce that they exist in the applications database first
-    if not check_user_registration(email=payload.email):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="This email is not registered for WolfHacks. Please use the email you applied with."
-        )
-
-    supabase = get_supabase_client()
-    if not supabase:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Supabase is not configured."
-        )
-
-    try:
-        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-        response = supabase.auth.admin.generate_link({
-            "type": "recovery",
-            "email": payload.email,
-            "options": {
-                "redirect_to": f"{frontend_url}/portal/setup-login"
-            }
-        })
-
-        # In production, dispatch action_link via email service (e.g. Resend)
-        action_link = getattr(response.properties, "action_link", None) if hasattr(response, "properties") else None
-
-        return {
-            "message": "Password setup instructions generated.",
-            "debug_link": action_link if os.getenv("DEBUG") else None
-        }
-    except Exception as exc:
-        logger.exception("Failed generating password setup link for %s", payload.email)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-
-@app.post("/api/auth/verify-and-grant-access")
-def verify_and_grant_access(payload: PasswordSetupRequest):
-    email = payload.email.strip().lower()
-
-    # Enforce registration check in applications table
-    if not check_user_registration(email=email):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="This email is not registered for WolfHacks. Please use the email you applied with."
-        )
-
-    supabase = get_supabase_client()
-    if not supabase:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Supabase client not configured."
-        )
-
-    try:
-        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-
-        # Generate setup/recovery link without sending an email
-        link_response = supabase.auth.admin.generate_link({
-            "type": "recovery",
-            "email": email,
-            "options": {
-                "redirect_to": f"{frontend_url}/portal/setup-request"
-            }
-        })
-
-        # Extract action link generated by Supabase
-        action_link = link_response.properties.action_link
-
-        return {
-            "success": True,
-            "action_link": action_link
-        }
-
-    except Exception as exc:
-        logger.exception("Failed granting access link for %s", email)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-
-
-# --- Day-of check-in ---
+# --- Day-of check-in (staff tool) ---
 #
 # Staff-facing lookup + check-in for registrants already in the `applications`
-# table. Checking someone in is the only thing that should let them log into
-# the day-of portal later: `GET /api/checkin/verify` is the hook the portal's
-# login should call to enforce that gate (unchecked-in registrants are not
-# participants and must not be able to log in).
+# table. This is deliberately NOT tied to hacker/organizer accounts -- staff
+# share one key, entered once in the /checkin tool. Checking someone in is
+# what then lets auth.get_current_participant let them log into the portal.
 
 REGISTRANT_FIELDS = "id, first_name, last_name, email, checked_in, checked_in_at"
 
@@ -672,10 +430,7 @@ def _require_supabase():
 
 
 def _ilike_pattern(term: str) -> str:
-    # Escape PostgREST/SQL LIKE wildcards in user input before wrapping it in
-    # our own wildcards, so a search for "50% off" or "a_b" can't widen the match.
-    escaped = term.replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
-    return f"%{escaped}%"
+    return f"%{escape_ilike(term)}%"
 
 
 @app.get("/api/checkin/search", response_model=list[Registrant])
@@ -733,9 +488,9 @@ def check_in_registrant(registrant_id: str, _: None = Depends(require_staff_key)
 
 @app.get("/api/checkin/verify")
 def verify_checked_in(email: str = Query(min_length=5, max_length=254)):
-    # Intentionally unauthenticated (unlike search/check-in above): this is
-    # the endpoint the day-of portal's login flow calls to decide whether an
-    # email may log in. It only ever returns a boolean, never registrant data.
+    # Intentionally unauthenticated (unlike search/check-in above): kept for
+    # any client that wants a plain boolean without a full participant
+    # lookup. auth.get_current_participant enforces the actual login gate.
     client = _require_supabase()
     result = (
         client.table(SUPABASE_APPLICATIONS_TABLE)

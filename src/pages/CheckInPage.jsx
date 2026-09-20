@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import ThemeToggle from './ThemeToggle.jsx';
-import Starfield from './Starfield.jsx';
+import ThemeToggle from '../components/ThemeToggle.jsx';
+import Starfield from '../components/Starfield.jsx';
 
 const API_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:8000' : '');
 const STAFF_KEY_STORAGE = 'wolfhacks_staff_key';

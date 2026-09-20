@@ -7,11 +7,12 @@ import Faq from './components/Faq.jsx';
 import Footer from './components/Footer.jsx';
 import ApplyPage from './components/ApplyPage.jsx';
 import ThankYouPage from './components/ThankYouPage.jsx';
+import PortalShell from './components/PortalShell.jsx';
 import PortalLogin from './pages/PortalLogin.jsx';
-import Portal from './pages/Portal.jsx';
 import OrganizerPortal from './pages/OrganizerPortal.jsx';
-import UpdatePassword from './pages/UpdatePassword';
-import CheckInPage from './components/CheckInPage.jsx';
+import UpdatePassword from './pages/UpdatePassword.jsx';
+import CheckInPage from './pages/CheckInPage.jsx';
+import PORTAL_SECTIONS from './data/portalSections.js';
 
 export default function App() {
   const pathname = window.location.pathname.replace(/\/$/, '');
@@ -24,12 +25,12 @@ export default function App() {
     return <ThankYouPage />;
   }
 
-  if (pathname === '/portal/login') {
-    return <PortalLogin />;
+  if (pathname === '/checkin') {
+    return <CheckInPage />;
   }
 
-  if (pathname === '/portal') {
-    return <Portal />;
+  if (pathname === '/portal/login') {
+    return <PortalLogin />;
   }
 
   if (pathname === '/portal/organizer') {
@@ -40,8 +41,13 @@ export default function App() {
     return <UpdatePassword />;
   }
 
-  if (pathname === '/checkin') {
-    return <CheckInPage />;
+  if (pathname === '/portal') {
+    return <PortalShell />;
+  }
+
+  const portalSection = PORTAL_SECTIONS.find((section) => section.path === pathname);
+  if (portalSection) {
+    return <PortalShell sectionId={portalSection.id} />;
   }
 
   return (
