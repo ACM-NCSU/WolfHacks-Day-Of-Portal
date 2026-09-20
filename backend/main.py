@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 # modules read SUPABASE_URL/etc. from the environment at import time.
 load_dotenv()
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request as FastAPIRequest
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, status, Request as FastAPIRequest
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -123,6 +123,11 @@ STAFF_CHECKIN_KEY = os.getenv("STAFF_CHECKIN_KEY", "")
 app.include_router(auth_router)
 app.include_router(schedule_router)
 app.include_router(announcements_router)
+
+# Shared secret staff enter in the check-in tool. Not a real auth system --
+# just enough to keep the check-in/search endpoints from being open to
+# anyone who finds the URL. Rotate by changing the env var.
+STAFF_CHECKIN_KEY = os.getenv("STAFF_CHECKIN_KEY", "")
 
 app.add_middleware(
     CORSMiddleware,
