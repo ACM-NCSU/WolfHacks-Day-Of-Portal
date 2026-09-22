@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 // Backs PortalShell with the real Supabase session. Anonymous visitors are
@@ -11,6 +12,7 @@ import { supabase } from '../lib/supabase';
 export default function usePortalSession() {
   const [status, setStatus] = useState('loading'); // 'loading' | 'anonymous' | 'authenticated'
   const [participant, setParticipant] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let cancelled = false;
@@ -21,7 +23,7 @@ export default function usePortalSession() {
       if (!session) {
         if (!cancelled) {
           setStatus('anonymous');
-          window.location.href = '/portal/login';
+          navigate('/portal/login', { replace: true });
         }
         return;
       }
@@ -34,9 +36,10 @@ export default function usePortalSession() {
         await supabase.auth.signOut();
         if (!cancelled) {
           setStatus('anonymous');
-          window.location.href = response.status === 403
-            ? '/portal/login?error=not_registered'
-            : '/portal/login';
+          navigate(
+            response.status === 403 ? '/portal/login?error=not_registered' : '/portal/login',
+            { replace: true },
+          );
         }
         return;
       }
@@ -61,16 +64,21 @@ export default function usePortalSession() {
     return () => {
       cancelled = true;
     };
+    // navigate deliberately excluded: react-router-dom's useNavigate() returns a
+    // new function identity on every route change, and including it here would
+    // re-run this session/auth check (a real network round trip) on every portal
+    // navigation instead of once per mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = useCallback(() => {
-    window.location.href = '/portal/login';
-  }, []);
+    navigate('/portal/login');
+  }, [navigate]);
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
-    window.location.href = '/portal/login';
-  }, []);
+    navigate('/portal/login');
+  }, [navigate]);
 
   return { participant, status, login, logout };
 }

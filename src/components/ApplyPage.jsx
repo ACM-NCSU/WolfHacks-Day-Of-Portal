@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle.jsx';
 import Starfield from './Starfield.jsx';
 
@@ -229,6 +230,7 @@ function SelectField({ name, value, onChange, options, placeholder = 'Select an 
 }
 
 export default function ApplyPage() {
+  const navigate = useNavigate();
   const [form, setForm] = useState(initialForm);
   const [schools, setSchools] = useState([]);
   const [schoolsStatus, setSchoolsStatus] = useState('loading');
@@ -489,7 +491,7 @@ export default function ApplyPage() {
         throw new Error('Submission failed');
       }
 
-      window.location.assign('/thank-you');
+      navigate('/thank-you');
     } catch (submissionError) {
       console.error(submissionError);
       setError(GENERIC_SUBMIT_ERROR);
@@ -503,7 +505,7 @@ export default function ApplyPage() {
       <ThemeToggle />
       <main className="apply-page">
         <div className="container apply-page__container">
-          <a href="/" className="apply-page__back">&larr; Back to WolfHacks</a>
+          <Link to="/" className="apply-page__back">&larr; Back to WolfHacks</Link>
           <motion.div
             className="apply-page__intro"
             initial={{ opacity: 0, y: 14 }}
@@ -519,7 +521,7 @@ export default function ApplyPage() {
               <p className="eyebrow">APPLICATION RECEIVED</p>
               <h2 className="section__heading">You&apos;re on the list.</h2>
               <p className="section__lede">Thanks for applying to WolfHacks. We&apos;ll email you with next steps.</p>
-              <a href="/" className="btn btn--primary">Return home</a>
+              <Link to="/" className="btn btn--primary">Return home</Link>
             </section>
           ) : (
             <form className="application-form" onSubmit={submitApplication} noValidate>

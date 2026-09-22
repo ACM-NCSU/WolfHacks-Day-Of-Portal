@@ -1,7 +1,11 @@
 // Single source of truth for the portal's nav tabs. Each feature branch
-// (team dashboard, live schedule, check-in, announcements) replaces its
-// section's placeholder card in PortalShell with the real page -- the id/
-// path/label here is what wires it into the shell's nav.
+// (team dashboard, live schedule, announcements) replaces its section's
+// placeholder card in PortalShell with the real page -- the id/path/label
+// here is what wires it into the shell's nav. A hacker's own check-in status
+// isn't a tab -- it's shown as a badge in the header instead (see
+// PortalShell.jsx). `organizerOnly` hides a tab from the nav for non-
+// organizers; CheckInSection also gates its own content as defense in depth
+// against someone hitting the URL directly.
 const PORTAL_SECTIONS = [
   {
     id: 'schedule',
@@ -22,10 +26,11 @@ const PORTAL_SECTIONS = [
   {
     id: 'checkin',
     path: '/portal/checkin',
-    label: 'Check-in',
-    eyebrow: 'EVENT CHECK-IN',
-    heading: 'Confirm your registration.',
-    note: 'Will connect to event check-in (feature/event-check-in).',
+    label: 'Staff Check-In',
+    eyebrow: 'STAFF ONLY',
+    heading: 'Event check-in.',
+    note: 'Search a registrant and confirm they are checked in.',
+    organizerOnly: true,
   },
   {
     id: 'announcements',
@@ -41,8 +46,7 @@ const PORTAL_SECTIONS = [
     label: 'Meals',
     eyebrow: 'MEALS',
     heading: 'Show this at the food table.',
-    note: 'Real QR code goes here once meal check-in is wired up.',
-    qr: true,
+    note: 'Scan a hacker\'s meal QR code to see their dietary restrictions.',
   },
 ];
 

@@ -323,13 +323,10 @@ a.acm-mention:hover { text-decoration: underline; }
 
 /* ---------- Check-in ---------- */
 
-.checkin-page label { display: flex; flex-direction: column; gap: 7px; margin-bottom: 22px; color: var(--paper); font-family: var(--font-mono); font-size: 13px; }
-.checkin-page input { width: 100%; border: 1px solid var(--line); border-radius: 2px; padding: 12px 13px; background: var(--ink-raised); color: var(--paper); font: 16px var(--font-body); }
-.checkin-page input:focus { outline: 2px solid var(--red); outline-offset: 1px; }
-.checkin-page__key { max-width: 360px; }
 .checkin-page__search { display: flex; align-items: flex-end; gap: 14px; max-width: 520px; }
-.checkin-page__search label { flex: 1; margin-bottom: 0; }
-.checkin-page__search button { margin-bottom: 22px; }
+.checkin-page__search label { display: flex; flex-direction: column; gap: 7px; flex: 1; margin-bottom: 0; color: var(--paper); font-family: var(--font-mono); font-size: 13px; }
+.checkin-page__search input { width: 100%; border: 1px solid var(--line); border-radius: 2px; padding: 12px 13px; background: var(--ink-raised); color: var(--paper); font: 16px var(--font-body); }
+.checkin-page__search input:focus { outline: 2px solid var(--red); outline-offset: 1px; }
 .checkin-page__empty { color: var(--steel-dark); font-family: var(--font-body); font-size: 14px; margin-top: 8px; }
 .checkin-page__results { list-style: none; margin: 24px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .checkin-page__result { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px; border: 1px solid var(--line); background: var(--card); }
@@ -993,6 +990,24 @@ a.acm-mention:hover { text-decoration: underline; }
 
 .portal-shell__account { display: flex; align-items: center; gap: 14px; }
 
+.portal-shell__checkin-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  border-radius: 2px;
+  white-space: nowrap;
+  background: rgba(70, 180, 100, 0.15);
+  color: #4cbf6f;
+  border: 1px solid rgba(70, 180, 100, 0.4);
+}
+
+.portal-shell__checkin-badge--out {
+  background: var(--ink-raised);
+  color: var(--steel);
+  border-color: var(--line);
+}
+
 .portal-shell__account-name {
   color: var(--steel-dark);
   font-family: var(--font-mono);
@@ -1084,6 +1099,39 @@ a.acm-mention:hover { text-decoration: underline; }
   font-family: var(--font-mono);
   font-size: 13px;
   letter-spacing: 0.08em;
+}
+
+.portal-shell__qr-canvas {
+  display: block;
+  width: 220px;
+  height: 220px;
+  margin: 0 auto 20px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+
+.meals-scanner__video-wrap {
+  max-width: 320px;
+  margin: 0 auto 16px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--line);
+}
+
+.meals-scanner__video-wrap--hidden {
+  display: none;
+}
+
+.meals-scanner__video {
+  display: block;
+  width: 100%;
+}
+
+.meals-scanner__result {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
 }
 
 .portal-shell__grid {
@@ -1441,13 +1489,10 @@ button.team-chip--selected:hover { color: var(--cream); }
 
 /* ---------- Check-in (staff tool) ---------- */
 
-.checkin-page label { display: flex; flex-direction: column; gap: 7px; margin-bottom: 22px; color: var(--paper); font-family: var(--font-mono); font-size: 13px; }
-.checkin-page input { width: 100%; border: 1px solid var(--line); border-radius: 2px; padding: 12px 13px; background: var(--ink-raised); color: var(--paper); font: 16px var(--font-body); }
-.checkin-page input:focus { outline: 2px solid var(--red); outline-offset: 1px; }
-.checkin-page__key { max-width: 360px; }
 .checkin-page__search { display: flex; align-items: flex-end; gap: 14px; max-width: 520px; }
-.checkin-page__search label { flex: 1; margin-bottom: 0; }
-.checkin-page__search button { margin-bottom: 22px; }
+.checkin-page__search label { display: flex; flex-direction: column; gap: 7px; flex: 1; margin-bottom: 0; color: var(--paper); font-family: var(--font-mono); font-size: 13px; }
+.checkin-page__search input { width: 100%; border: 1px solid var(--line); border-radius: 2px; padding: 12px 13px; background: var(--ink-raised); color: var(--paper); font: 16px var(--font-body); }
+.checkin-page__search input:focus { outline: 2px solid var(--red); outline-offset: 1px; }
 .checkin-page__empty { color: var(--steel-dark); font-family: var(--font-body); font-size: 14px; margin-top: 8px; }
 .checkin-page__results { list-style: none; margin: 24px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .checkin-page__result { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px; border: 1px solid var(--line); background: var(--card); }

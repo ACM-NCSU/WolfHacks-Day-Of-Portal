@@ -161,7 +161,11 @@ def get_current_participant(authorization: str | None = Header(default=None)) ->
 
     provider = user.app_metadata.get("provider")
     discord_id = user_metadata.get("sub") if provider == "discord" else None
-    discord_username = user_metadata.get("preferred_username") if provider == "discord" else None
+    # Supabase's Discord provider does not populate "preferred_username" --
+    # the plain username (no discriminator) comes through as "full_name". The
+    # applications table stores discord_username with a leading "@" (the
+    # application form requires it), so prefix it here to match.
+    discord_username = f"@{user_metadata['full_name']}" if provider == "discord" and user_metadata.get("full_name") else None
 
     app_record = get_and_backfill_user(
         auth_user_id=user.id,

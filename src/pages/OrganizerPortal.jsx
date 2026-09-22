@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export default function OrganizerPortal() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
         loadUser();
@@ -15,7 +17,7 @@ export default function OrganizerPortal() {
         } = await supabase.auth.getSession();
 
         if (!session) {
-            window.location.href = '/portal/login';
+            navigate('/portal/login', { replace: true });
             return;
         }
 
@@ -27,7 +29,7 @@ export default function OrganizerPortal() {
 
         if (!response.ok) {
             await supabase.auth.signOut();
-            window.location.href = '/portal/login';
+            navigate('/portal/login', { replace: true });
             return;
         }
 
@@ -35,7 +37,7 @@ export default function OrganizerPortal() {
 
         // Security Guard: Kick non-organizers out of the organizer portal
         if (data.role !== 'organizer' && data.role !== 'admin') {
-            window.location.href = '/portal';
+            navigate('/portal', { replace: true });
             return;
         }
 
@@ -45,7 +47,7 @@ export default function OrganizerPortal() {
 
     async function logout() {
         await supabase.auth.signOut();
-        window.location.href = '/portal/login';
+        navigate('/portal/login');
     }
 
     if (loading) {

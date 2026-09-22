@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle.jsx';
 import Starfield from './Starfield.jsx';
 
@@ -17,7 +18,7 @@ export default function ThankYouPage() {
             <p className="eyebrow">REGISTRATION COMPLETE</p>
             <h1 className="section__heading">Thank you so much for registering!</h1>
             <p className="section__lede">Your application has been received. We&apos;ll be in touch with next steps.</p>
-            <a href="/" className="btn btn--primary">Return Home</a>
+            <Link to="/" className="btn btn--primary">Return Home</Link>
           </motion.section>
         </div>
       </main>

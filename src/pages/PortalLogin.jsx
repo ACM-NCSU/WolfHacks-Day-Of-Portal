@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export default function PortalLogin() {
@@ -6,6 +7,7 @@ export default function PortalLogin() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -30,7 +32,7 @@ export default function PortalLogin() {
             return;
         }
 
-        window.location.href = '/portal';
+        navigate('/portal');
     }
 
     async function handleDiscordLogin() {
@@ -86,9 +88,9 @@ export default function PortalLogin() {
                         </label>
 
                         <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-                            <a href="/portal/setup-request" style={{ fontSize: '0.85rem', color: 'inherit' }}>
+                            <Link to="/portal/setup-request" style={{ fontSize: '0.85rem', color: 'inherit' }}>
                                 Set up your password
-                            </a>
+                            </Link>
                         </div>
 
                         <div className="portal-login__divider">

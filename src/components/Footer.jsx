@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import siteConfig from '../data/siteConfig.js';
 
 export default function Footer() {
@@ -41,7 +42,7 @@ export default function Footer() {
         <div className="footer__links-col">
           <nav className="footer__links" aria-label="Footer">
             <a href="#faq">FAQ</a>
-            <a href="/checkin">Staff Check-In</a>
+            <Link to="/portal/checkin">Staff Check-In</Link>
           </nav>
 
           <div className="footer__contact">

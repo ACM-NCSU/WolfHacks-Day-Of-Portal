@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 # modules read SUPABASE_URL/etc. from the environment at import time.
 load_dotenv()
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, status, Request as FastAPIRequest
+from fastapi import Depends, FastAPI, HTTPException, Query, status, Request as FastAPIRequest
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,11 +24,13 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 from db import get_supabase_client, escape_ilike, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_APPLICATIONS_TABLE
-from auth import router as auth_router
+from auth import router as auth_router, get_current_participant
+from repository import Participant
 # teams_router intentionally not mounted -- a teammate owns the team dashboard
 # feature separately; backend/teams.py is left in place, ready to re-enable.
 from schedule import router as schedule_router
 from announcements import router as announcements_router
+from meals import router as meals_router
 
 _log_formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
 
@@ -115,19 +117,10 @@ SPREADSHEET_ID = os.getenv(
 )
 SHEETS_RANGE = os.getenv("GOOGLE_SHEETS_RANGE", "Applications!A:X")
 
-# Shared secret staff enter in the check-in tool. Not a real auth system --
-# just enough to keep the check-in/search endpoints from being open to
-# anyone who finds the URL. Rotate by changing the env var.
-STAFF_CHECKIN_KEY = os.getenv("STAFF_CHECKIN_KEY", "")
-
 app.include_router(auth_router)
 app.include_router(schedule_router)
 app.include_router(announcements_router)
-
-# Shared secret staff enter in the check-in tool. Not a real auth system --
-# just enough to keep the check-in/search endpoints from being open to
-# anyone who finds the URL. Rotate by changing the env var.
-STAFF_CHECKIN_KEY = os.getenv("STAFF_CHECKIN_KEY", "")
+app.include_router(meals_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -392,10 +385,11 @@ def create_application(application: Application):
 
 # --- Day-of check-in (staff tool) ---
 #
-# Staff-facing lookup + check-in for registrants already in the `applications`
-# table. This is deliberately NOT tied to hacker/organizer accounts -- staff
-# share one key, entered once in the /checkin tool. Checking someone in is
-# what then lets auth.get_current_participant let them log into the portal.
+# Organizer-facing lookup + check-in for registrants already in the
+# `applications` table. Gated by the same Supabase auth as the rest of the
+# portal (get_current_participant) plus an organizer-role check, since
+# checking someone in is what then lets auth.get_current_participant let
+# them log into the portal themselves.
 
 REGISTRANT_FIELDS = "id, first_name, last_name, email, checked_in, checked_in_at"
 
@@ -409,14 +403,10 @@ class Registrant(BaseModel):
     checked_in_at: str | None = None
 
 
-def require_staff_key(x_staff_key: str = Header(default="")):
-    if not STAFF_CHECKIN_KEY:
-        raise HTTPException(
-            status_code=503,
-            detail="Check-in is not configured: set STAFF_CHECKIN_KEY on the backend",
-        )
-    if x_staff_key != STAFF_CHECKIN_KEY:
-        raise HTTPException(status_code=401, detail="Invalid or missing staff key")
+def require_organizer(participant: Participant = Depends(get_current_participant)) -> Participant:
+    if not participant.is_organizer:
+        raise HTTPException(status_code=403, detail="Only organizers can access check-in.")
+    return participant
 
 
 def _require_supabase():
@@ -436,7 +426,7 @@ def _ilike_pattern(term: str) -> str:
 @app.get("/api/checkin/search", response_model=list[Registrant])
 def search_registrants(
     q: str = Query(min_length=1, max_length=254),
-    _: None = Depends(require_staff_key),
+    _: Participant = Depends(require_organizer),
 ):
     client = _require_supabase()
     table = client.table(SUPABASE_APPLICATIONS_TABLE)
@@ -468,7 +458,7 @@ def search_registrants(
 
 
 @app.post("/api/checkin/{registrant_id}", response_model=Registrant)
-def check_in_registrant(registrant_id: str, _: None = Depends(require_staff_key)):
+def check_in_registrant(registrant_id: str, _: Participant = Depends(require_organizer)):
     client = _require_supabase()
     now = datetime.now(timezone.utc).isoformat()
 

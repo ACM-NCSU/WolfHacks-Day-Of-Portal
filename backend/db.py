@@ -1,4 +1,5 @@
 import os
+from functools import lru_cache
 
 from supabase import create_client
 
@@ -10,7 +11,13 @@ SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 SUPABASE_APPLICATIONS_TABLE = os.getenv("SUPABASE_APPLICATIONS_TABLE", "applications")
 
 
+@lru_cache(maxsize=1)
 def get_supabase_client():
+    # create_client() builds several sub-clients (auth/postgrest/storage) and
+    # their own HTTP connection pools -- constructing it fresh on every call
+    # (every request touched this at least twice, via get_authenticated_user
+    # and get_and_backfill_user) added seconds of latency per request. Cached
+    # for the life of the process instead; env vars don't change at runtime.
     if not (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY):
         return None
     return create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export default function UpdatePassword() {
+    const navigate = useNavigate();
     const [isResetFlow, setIsResetFlow] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -93,7 +95,7 @@ export default function UpdatePassword() {
 
         setMessage('Password set successfully! Redirecting to portal...');
         setTimeout(() => {
-            window.location.href = '/portal';
+            navigate('/portal');
         }, 1500);
     }
 
@@ -177,9 +179,9 @@ export default function UpdatePassword() {
                             </button>
 
                             <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-                                <a href="/portal/login" style={{ fontSize: '0.85rem', color: 'inherit' }}>
+                                <Link to="/portal/login" style={{ fontSize: '0.85rem', color: 'inherit' }}>
                                     Back to Sign In
-                                </a>
+                                </Link>
                             </div>
                         </form>
                     )}

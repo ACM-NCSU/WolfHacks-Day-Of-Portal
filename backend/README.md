@@ -41,9 +41,12 @@ Applications are submitted as JSON to `POST /api/applications` and appended to t
 
 ### Day-of check-in
 
-Staff-facing endpoints for confirming a registrant at the door, backed by the
-`checked_in` / `checked_in_at` columns in Supabase (see `supabase_schema.sql`).
-Search and check-in require the `X-Staff-Key` header to match `STAFF_CHECKIN_KEY`:
+Organizer-facing endpoints for confirming a registrant at the door, backed by
+the `checked_in` / `checked_in_at` columns in Supabase (see
+`supabase_schema.sql`). Search and check-in require a Supabase session
+belonging to a participant with `role` set to `organizer` or `admin` (the
+same `Authorization: Bearer <access_token>` auth as the rest of the portal;
+see `auth.get_current_participant` and `require_organizer` in `main.py`):
 
 - `GET /api/checkin/search?q=...` — searches by email (exact, case-insensitive)
   if `q` contains `@`, otherwise by name. Returns matching registrants.
