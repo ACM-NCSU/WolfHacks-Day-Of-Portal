@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle.jsx';
 import Starfield from './Starfield.jsx';
+import SelectField from './SelectField.jsx';
+import { API_URL } from '../lib/api.js';
 
-const API_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:8000' : '');
 const AGE_ERROR = 'You must be at least 18 years old to participate.';
 const CONTACT_EMAIL = 'acmchapter-org@ncsu.edu';
 const GENERIC_SUBMIT_ERROR = `Application failed, please try again. If this continues to fail please contact us at ${CONTACT_EMAIL}.`;
@@ -120,115 +121,6 @@ function parseSchoolsCsv(csv) {
   return pinned.length ? [PINNED_UNIVERSITY, ...rest] : [PINNED_UNIVERSITY, ...schools];
 }
 
-const dropdownStyles = `
-  .application-form__searchable {
-    position: relative;
-  }
-
-  .application-form__searchable input {
-    width: 100%;
-  }
-
-  .application-form__dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background-color: var(--color-bg, #1a1a1a);
-    border: 1px solid var(--color-border, #333);
-    border-top: none;
-    max-height: 200px;
-    overflow-y: auto;
-    z-index: 1000;
-  }
-
-  .application-form__dropdown-item {
-    padding: 12px 16px;
-    cursor: pointer;
-    color: white;
-    border-bottom: 1px solid var(--color-border, #333);
-    transition: background-color 0.15s ease;
-  }
-
-  .application-form__dropdown-item:hover {
-    background-color: var(--color-primary, #4a7bff);
-  }
-
-  .application-form__dropdown-item--selected {
-    background-color: var(--color-primary, #4a7bff);
-  }
-
-  .application-form__searchable--select input {
-    cursor: pointer;
-    padding-right: 34px;
-  }
-
-  .application-form__searchable--select::after {
-    content: '\\25BE';
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    color: var(--paper, #fff);
-    pointer-events: none;
-    font-size: 12px;
-  }
-`;
-
-function SelectField({ name, value, onChange, options, placeholder = 'Select an option', disabled = false }) {
-  const [open, setOpen] = useState(false);
-  const wrapperRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setOpen(false);
-    }
-    function handleKeyDown(e) {
-      if (e.key === 'Escape') setOpen(false);
-    }
-    document.addEventListener('click', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
-
-  function select(event, option) {
-    // These options render inside a <label>, so a plain click here also
-    // triggers the browser's native label->control click forwarding onto
-    // the sibling <input>, which re-toggles it open right after we close it.
-    event.preventDefault();
-    onChange(name, option);
-    setOpen(false);
-  }
-
-  return (
-    <div className="application-form__searchable application-form__searchable--select" ref={wrapperRef}>
-      <input
-        type="text"
-        value={value}
-        readOnly
-        onClick={() => !disabled && setOpen((current) => !current)}
-        placeholder={placeholder}
-        disabled={disabled}
-      />
-      {open && (
-        <div className="application-form__dropdown">
-          {options.map((option) => (
-            <div
-              key={option}
-              onClick={(event) => select(event, option)}
-              className={`application-form__dropdown-item ${value === option ? 'application-form__dropdown-item--selected' : ''}`}
-            >
-              {option}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function ApplyPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState(initialForm);
@@ -241,12 +133,6 @@ export default function ApplyPage() {
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
   const [universitySearch, setUniversitySearch] = useState('');
   const [universityDropdownOpen, setUniversityDropdownOpen] = useState(false);
-  useEffect(() => {
-    const styleTag = document.createElement('style');
-    styleTag.textContent = dropdownStyles;
-    document.head.appendChild(styleTag);
-    return () => styleTag.remove();
-  }, []);
 
   useEffect(() => {
     fetch(SCHOOLS_CSV_URL)

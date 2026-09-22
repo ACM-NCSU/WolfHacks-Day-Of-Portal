@@ -33,9 +33,10 @@ export default function App() {
     <Routes>
       <Route path="/apply" element={<ApplyPage />} />
       <Route path="/thank-you" element={<ThankYouPage />} />
-      {/* Check-in is now a portal section (organizer-only), not a standalone
-          page -- redirect anyone with the old URL bookmarked. */}
+      {/* Check-in and the team dashboard are now portal sections, not
+          standalone pages -- redirect anyone with an old URL bookmarked. */}
       <Route path="/checkin" element={<Navigate to="/portal/checkin" replace />} />
+      <Route path="/team" element={<Navigate to="/portal/team" replace />} />
       <Route path="/portal/login" element={<PortalLogin />} />
       <Route path="/portal/organizer" element={<OrganizerPortal />} />
       <Route path="/portal/setup-request" element={<UpdatePassword />} />

@@ -6,7 +6,15 @@ import useTeamState from '../hooks/useTeamState.js';
 // Rendered inside PortalShell's 'team' section -- PortalShell already
 // guarantees an authenticated `participant` before this ever mounts.
 export default function TeamDashboard({ participant }) {
-  const { team, incomingInvites, outgoingInvites, hasLoadedOnce, refresh } = useTeamState(participant);
+  const {
+    team,
+    incomingInvites,
+    outgoingInvites,
+    hasLoadedOnce,
+    setTeam,
+    setIncomingInvites,
+    setOutgoingInvites,
+  } = useTeamState(participant);
 
   return (
     <section>
@@ -22,12 +30,18 @@ export default function TeamDashboard({ participant }) {
           team={team}
           participant={participant}
           outgoingInvites={outgoingInvites}
-          onChanged={refresh}
+          onTeamUpdate={setTeam}
+          setOutgoingInvites={setOutgoingInvites}
         />
       ) : (
         <>
-          <PendingInvites mode="incoming" invites={incomingInvites} onChanged={refresh} />
-          <TeamCreateCard onChanged={refresh} />
+          <PendingInvites
+            mode="incoming"
+            invites={incomingInvites}
+            setInvites={setIncomingInvites}
+            onAccepted={setTeam}
+          />
+          <TeamCreateCard onCreated={setTeam} />
           <p className="section__lede">
             A team leader can also add you by searching your name or email.
           </p>

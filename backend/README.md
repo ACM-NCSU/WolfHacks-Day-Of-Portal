@@ -112,3 +112,54 @@ Also set `GOOGLE_SHEETS_SPREADSHEET_ID` (and `GOOGLE_SHEETS_RANGE` if it
 differs from the default) in the same place. `WOLFHACKS_ALLOWED_ORIGINS`
 generally isn't needed in production — the frontend calls `/api/...` as a
 relative path, so requests are same-origin and never trigger CORS.
+
+## Team dashboard (issue #4)
+
+`teams.py` adds the endpoints behind the `/team` page in the frontend, gated
+by the same `Authorization: Bearer <access_token>` auth as the rest of the
+portal (see `auth.get_current_participant`). Persistence is **Supabase
+Postgres** (`repository.py`) — team identity is the existing `applications`
+table (the columns `checked_in`, `user_id`, `discord_id`, `role` come from
+the check-in and login features; this module reads them and never writes
+them). There is no separate `participants` table.
+
+Team tables (`teams`, `team_members`, `team_invites`) and the
+`participant_directory` view live in `backend/supabase_dev_bootstrap.sql`.
+Run `supabase_schema.sql` then `supabase_dev_bootstrap.sql` then
+`seed_dev_data.sql` in a **dev** Supabase project's SQL editor — never the
+shared production one — then set `SUPABASE_URL` /
+`SUPABASE_SERVICE_ROLE_KEY` in `.env` to that dev project. See
+`docs/testing-team-dashboard.md` for the full walkthrough.
+
+Seeded accounts (`backend/seed_dev_data.sql`): `jordan@ncsu.edu` leads
+"Wolfpack Coders", `taylor@ncsu.edu` is a member, `alex@ncsu.edu` has a
+pending invite, `sam@ncsu.edu` / `morgan@ncsu.edu` are checked in with no
+team, `casey@ncsu.edu` is registered but not checked in.
+
+Live updates on `/team` are done by the frontend polling `GET /api/team/me`
+every ~10s, not Supabase Realtime — see plan.md Phase 4 for why.
+
+**Responsiveness pass:** testing against a real dev project surfaced two
+problems, both fixed. First, a real bug — `useTeamState.js`'s staleness
+guard didn't invalidate in-flight requests on logout, so a slow response
+from a just-logged-out session could briefly render under the next person's
+login; fixed by bumping its sequence counter unconditionally. Second, every
+action felt sluggish because of sheer round-trip count: each Supabase call
+built a brand-new client (repeated TLS handshakes), and four mutating
+endpoints fetched the *entire* team state just to check who the leader was.
+`repository.py` now reuses one client for the process lifetime (via
+`db.get_supabase_client()`) and exposes `get_team_role()`, a 2-query
+leadership check, in place of that. The frontend mirrors this: every
+mutation (create, invite, accept, decline, cancel, leave, track/challenge
+changes) now applies the backend's own response directly to local state
+instead of triggering a second full refetch — see `useTeamState.js`'s
+`setTeam`/`setIncomingInvites`/`setOutgoingInvites`, which are
+identity-guarded so a mutation response can't reopen the same cross-session
+staleness bug through a different path.
+
+Endpoints: `GET /api/team/me`, `GET /api/participants/search?q=`,
+`POST /api/teams`, `PATCH /api/teams/{id}`,
+`DELETE /api/teams/{id}/members/me`, `POST /api/teams/{id}/invites`,
+`DELETE /api/teams/{id}/invites/{invite_id}`, `POST /api/invites/{id}/accept`,
+`POST /api/invites/{id}/decline` — all authenticated the same way as the
+rest of the portal.
