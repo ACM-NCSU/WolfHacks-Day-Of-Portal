@@ -341,6 +341,56 @@ a.acm-mention:hover { text-decoration: underline; }
   .application-form { padding: 20px; }
 }
 
+/* ---------- Select field ----------
+   Shared by the application form and the team dashboard's track/challenge
+   picker (src/components/SelectField.jsx). Previously injected via a
+   <style> tag with hardcoded fallback colors; moved here on real tokens. */
+
+.application-form__searchable { position: relative; }
+.application-form__searchable input { width: 100%; }
+
+.application-form__dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--ink-raised);
+  border: 1px solid var(--line);
+  border-top: none;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.application-form__dropdown-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  color: var(--paper);
+  border-bottom: 1px solid var(--line);
+  transition: background-color 0.15s ease;
+}
+
+.application-form__dropdown-item:hover,
+.application-form__dropdown-item--selected {
+  background-color: var(--red);
+  color: var(--cream);
+}
+
+.application-form__searchable--select input {
+  cursor: pointer;
+  padding-right: 34px;
+}
+
+.application-form__searchable--select::after {
+  content: '\25BE';
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  color: var(--paper);
+  pointer-events: none;
+  font-size: 12px;
+}
+
 /* ---------- Wolf mark ----------
    "Wolf Head" by Lorc, via game-icons.net (CC BY 3.0) */
 

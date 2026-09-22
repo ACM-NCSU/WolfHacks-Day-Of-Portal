@@ -5,18 +5,25 @@ import { updateTeam } from '../lib/teamApi.js';
 
 const { tracks, challenges } = siteConfig.event;
 
-export default function TrackChallengePicker({ team, onChanged }) {
+export default function TrackChallengePicker({ team, onTeamUpdate }) {
   const [error, setError] = useState('');
   const selectedTrack = tracks.find((t) => t.slug === team.track_slug);
 
+  // Optimistic: show the change immediately, then reconcile with whatever
+  // the PATCH actually returns (it's already the full updated team, so no
+  // separate refetch is needed), or roll back to the pre-click team on error.
   async function setTrack(_name, trackName) {
     const track = tracks.find((t) => t.name === trackName);
+    const nextSlug = track?.slug ?? null;
+    const previous = team;
     setError('');
+    onTeamUpdate({ ...team, track_slug: nextSlug });
     try {
-      await updateTeam(team.id, { track_slug: track?.slug ?? null });
-      await onChanged();
+      const updated = await updateTeam(team.id, { track_slug: nextSlug });
+      onTeamUpdate(updated);
     } catch (err) {
       console.error(err);
+      onTeamUpdate(previous);
       setError('Could not update the track. Please try again.');
     }
   }
@@ -25,12 +32,15 @@ export default function TrackChallengePicker({ team, onChanged }) {
     const next = team.challenge_slugs.includes(slug)
       ? team.challenge_slugs.filter((s) => s !== slug)
       : [...team.challenge_slugs, slug];
+    const previous = team;
     setError('');
+    onTeamUpdate({ ...team, challenge_slugs: next });
     try {
-      await updateTeam(team.id, { challenge_slugs: next });
-      await onChanged();
+      const updated = await updateTeam(team.id, { challenge_slugs: next });
+      onTeamUpdate(updated);
     } catch (err) {
       console.error(err);
+      onTeamUpdate(previous);
       setError('Could not update challenges. Please try again.');
     }
   }

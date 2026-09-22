@@ -7,16 +7,16 @@ import SchedulePage from './SchedulePage.jsx';
 import AnnouncementsPage from './AnnouncementsPage.jsx';
 import MealsPage from './MealsPage.jsx';
 import CheckInSection from './CheckInSection.jsx';
+import TeamDashboard from './TeamDashboard.jsx';
 import usePortalSession from '../hooks/usePortalSession.js';
 import PORTAL_SECTIONS from '../data/portalSections.js';
 import siteConfig from '../data/siteConfig.js';
 
 // Sections with a real page swap in here; anything absent still falls back
-// to the "Coming soon" placeholder below. 'team' is intentionally absent --
-// a teammate owns that feature separately (see src/components/TeamDashboard.jsx,
-// left in place and ready to re-enable).
+// to the "Coming soon" placeholder below.
 const SECTION_COMPONENTS = {
   schedule: SchedulePage,
+  team: TeamDashboard,
   announcements: AnnouncementsPage,
   meals: MealsPage,
   checkin: CheckInSection,

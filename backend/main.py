@@ -26,11 +26,10 @@ from googleapiclient.discovery import build
 from db import get_supabase_client, escape_ilike, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_APPLICATIONS_TABLE
 from auth import router as auth_router, get_current_participant
 from repository import Participant
-# teams_router intentionally not mounted -- a teammate owns the team dashboard
-# feature separately; backend/teams.py is left in place, ready to re-enable.
 from schedule import router as schedule_router
 from announcements import router as announcements_router
 from meals import router as meals_router
+from teams import router as teams_router
 
 _log_formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
 
@@ -121,6 +120,7 @@ app.include_router(auth_router)
 app.include_router(schedule_router)
 app.include_router(announcements_router)
 app.include_router(meals_router)
+app.include_router(teams_router)
 
 app.add_middleware(
     CORSMiddleware,

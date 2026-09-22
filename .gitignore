@@ -7,4 +7,5 @@ backend/.venv/
 backend/__pycache__/
 backend/service-account*.json
 backend/.env
-.env
+CLAUDE.md
+plan.md

@@ -1,7 +1,7 @@
-"""Team dashboard endpoints.
+"""Team dashboard endpoints (issue #4).
 
-Persistence goes through repository.py (in-memory for now, real Supabase
-tables are a follow-up) -- these routes don't know or care.
+Persistence goes through repository.py, which is Supabase-backed for
+teams/invites -- these routes don't know or care.
 """
 
 import logging
@@ -27,8 +27,13 @@ def _raise_for(err: repository.RepositoryError, status_code: int = 400):
     raise HTTPException(status_code=status_code, detail=str(err))
 
 
-def _require_leader(team: dict, participant: repository.Participant):
-    if team["leader_id"] != participant.id:
+def _require_leader_of(team_id: str, participant: repository.Participant) -> None:
+    # A 2-query leadership check instead of fetching the full get_my_state()
+    # (6-12 round trips) just to read one field.
+    role = repository.get_team_role(team_id, participant.id)
+    if role is None:
+        raise HTTPException(status_code=404, detail="Team not found.")
+    if role != "leader":
         raise HTTPException(status_code=403, detail="Only the team leader can do that.")
 
 
@@ -102,10 +107,7 @@ def create_team(body: CreateTeamRequest, participant: repository.Participant = D
 
 @router.patch("/teams/{team_id}")
 def update_team(team_id: str, body: UpdateTeamRequest, participant: repository.Participant = Depends(get_current_participant)):
-    state = repository.get_my_state(participant.id)
-    if state["team"] is None or state["team"]["id"] != team_id:
-        raise HTTPException(status_code=404, detail="Team not found.")
-    _require_leader(state["team"], participant)
+    _require_leader_of(team_id, participant)
     try:
         return repository.update_team(
             team_id,
@@ -129,10 +131,7 @@ def leave_team(team_id: str, participant: repository.Participant = Depends(get_c
 
 @router.post("/teams/{team_id}/invites", status_code=201)
 def create_invite(team_id: str, body: InviteRequest, participant: repository.Participant = Depends(get_current_participant)):
-    state = repository.get_my_state(participant.id)
-    if state["team"] is None or state["team"]["id"] != team_id:
-        raise HTTPException(status_code=404, detail="Team not found.")
-    _require_leader(state["team"], participant)
+    _require_leader_of(team_id, participant)
     try:
         invite = repository.invite_participant(team_id, body.participant_id, participant.id)
     except repository.RepositoryError as err:
@@ -143,12 +142,9 @@ def create_invite(team_id: str, body: InviteRequest, participant: repository.Par
 
 @router.delete("/teams/{team_id}/invites/{invite_id}", status_code=204)
 def cancel_invite(team_id: str, invite_id: str, participant: repository.Participant = Depends(get_current_participant)):
-    state = repository.get_my_state(participant.id)
-    if state["team"] is None or state["team"]["id"] != team_id:
-        raise HTTPException(status_code=404, detail="Team not found.")
-    _require_leader(state["team"], participant)
+    _require_leader_of(team_id, participant)
     try:
-        repository.cancel_invite(invite_id)
+        repository.cancel_invite(team_id, invite_id)
     except repository.RepositoryError as err:
         _raise_for(err, status_code=404)
 
@@ -156,10 +152,9 @@ def cancel_invite(team_id: str, invite_id: str, participant: repository.Particip
 @router.post("/invites/{invite_id}/accept")
 def accept_invite(invite_id: str, participant: repository.Participant = Depends(get_current_participant)):
     try:
-        repository.accept_invite(invite_id, participant.id)
+        return repository.accept_invite(invite_id, participant.id)
     except repository.RepositoryError as err:
         _raise_for(err, status_code=409)
-    return repository.get_my_state(participant.id)["team"]
 
 
 @router.post("/invites/{invite_id}/decline", status_code=204)

@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
+// Extracted from ApplyPage.jsx, which originally declared this inline and
+// injected its styles via a <style> tag on mount. Styles now live in
+// index.css under "Select field" so this has no side effects and can be
+// reused elsewhere (the team dashboard's track picker) without dragging the
+// apply form's dropdown-styles string along with it.
 export default function SelectField({ name, value, onChange, options, placeholder = 'Select an option', disabled = false }) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef(null);

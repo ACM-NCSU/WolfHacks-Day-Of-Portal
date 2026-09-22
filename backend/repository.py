@@ -1,28 +1,32 @@
-"""In-memory persistence for the team dashboard, schedule, and announcements.
+"""Persistence for teams, announcements, schedule, and participant identity.
 
-Stands in for real Supabase tables (teams/invites/schedule_items/
-announcements) pending a follow-up migration -- teams.py, schedule.py, and
-announcements.py never touch persistence directly, so that migration only
-has to rewrite what's in this file.
+Team/invite state (this file's largest section) is Supabase Postgres-backed,
+per supabase_dev_bootstrap.sql -- teams.py never touches Supabase directly,
+it only calls into this module. Announcements and schedule are still
+in-memory (state resets on process restart, which matters since this backend
+deploys to Vercel as a serverless function); migrating them is a follow-up,
+not done here.
 
-State lives in module-level variables and resets on process restart --
-acceptable for now, but note this backend deploys to Vercel as a serverless
-function, where in-memory state is not guaranteed to survive between
-invocations. Real persistence is a known follow-up, not done here.
-
-Participant identity, unlike team/schedule/announcement state, is NOT
-mocked: `_participants` starts empty and is populated by `remember_participant`
-every time someone authenticates (see auth.get_current_participant) or gets
-invited to a team (see `_ensure_participant_known`), backed by the real
-`applications` table in Supabase via db.py.
+Participant identity is NOT mocked: `_participants` starts empty and is
+populated by `remember_participant` every time someone authenticates (see
+auth.get_current_participant), backed by the real `applications` table in
+Supabase via db.py. It exists only to resolve ids to display names for
+announcements (`serialize_announcement`'s author_name) -- team/invite reads
+hydrate participant data live from Supabase instead of this cache.
 """
 
+import logging
+import uuid as uuid_lib
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from itertools import count
-from typing import Literal
 
-from db import get_supabase_client, escape_ilike, SUPABASE_APPLICATIONS_TABLE
+from postgrest.exceptions import APIError
+from supabase import Client
+
+from db import escape_ilike, get_supabase_client
+
+logger = logging.getLogger("wolfhacks")
 
 MAX_TEAM_SIZE = 4
 MAX_ANNOUNCEMENT_LENGTH = 500
@@ -40,25 +44,6 @@ class Participant:
     checked_in: bool
     is_organizer: bool = False
     role: str = "hacker"
-
-
-@dataclass
-class Team:
-    id: str
-    name: str
-    leader_id: str
-    track_slug: str | None
-    challenge_slugs: list[str]
-    member_ids: list[str]  # insertion order == join order
-
-
-@dataclass
-class Invite:
-    id: str
-    team_id: str
-    invited_participant_id: str
-    invited_by: str
-    status: Literal["pending", "accepted", "declined", "cancelled"]
 
 
 @dataclass
@@ -101,26 +86,14 @@ def _seed_schedule() -> list[ScheduleItem]:
 
 
 _participants: list[Participant] = []
-_teams: list[Team] = []
-_invites: list[Invite] = []
 _announcements: list[Announcement] = []
 _schedule: list[ScheduleItem] = _seed_schedule()
 
-_team_id_seq = count(1)
-_invite_id_seq = count(1)
 _announcement_id_seq = count(1)
 
 
 def _find_participant(participant_id: str) -> Participant | None:
     return next((p for p in _participants if p.id == participant_id), None)
-
-
-def _find_team(team_id: str) -> Team | None:
-    return next((t for t in _teams if t.id == team_id), None)
-
-
-def _team_for_participant(participant_id: str) -> Team | None:
-    return next((t for t in _teams if participant_id in t.member_ids), None)
 
 
 def serialize_participant(p: Participant) -> dict:
@@ -133,46 +106,12 @@ def serialize_participant(p: Participant) -> dict:
     }
 
 
-def serialize_team(t: Team, leader_id: str | None = None) -> dict:
-    leader = leader_id or t.leader_id
-    members = [
-        {**serialize_participant(p), "is_leader": p.id == leader}
-        for p in (_find_participant(pid) for pid in t.member_ids)
-        if p is not None
-    ]
-    return {
-        "id": t.id,
-        "name": t.name,
-        "leader_id": leader,
-        "track_slug": t.track_slug,
-        "challenge_slugs": list(t.challenge_slugs),
-        "members": members,
-    }
-
-
-def serialize_invite(i: Invite) -> dict:
-    team = _find_team(i.team_id)
-    invited_by = _find_participant(i.invited_by)
-    invited = _find_participant(i.invited_participant_id)
-    return {
-        "id": i.id,
-        "team_id": i.team_id,
-        "status": i.status,
-        "team_name": team.name if team else "(deleted team)",
-        "member_count": len(team.member_ids) if team else 0,
-        "invited_by_name": invited_by.full_name if invited_by else "Someone",
-        "invited_participant_id": i.invited_participant_id,
-        "invited_participant_name": invited.full_name if invited else "Someone",
-        "invited_participant_email": invited.email if invited else "",
-    }
-
-
 # --- Participant identity (backed by the real `applications` table) ---
 
 def remember_participant(p: Participant) -> None:
     """Upsert a participant into the in-memory registry. Called on every
     successful auth.get_current_participant lookup, so anyone who has
-    logged in at least once is resolvable by id for team/invite display."""
+    logged in at least once is resolvable by id for announcement display."""
     existing = _find_participant(p.id)
     if existing is not None:
         existing.email = p.email
@@ -184,201 +123,422 @@ def remember_participant(p: Participant) -> None:
         _participants.append(p)
 
 
-def _row_to_participant(row: dict) -> Participant:
-    full_name = f"{row.get('first_name') or ''} {row.get('last_name') or ''}".strip() or row["email"]
-    role = row.get("role", "hacker")
-    return Participant(
-        id=row["id"],
-        email=row["email"],
-        full_name=full_name,
-        checked_in=bool(row.get("checked_in")),
-        is_organizer=role in ("organizer", "admin"),
-        role=role,
-    )
-
-
-def _ensure_participant_known(participant_id: str) -> None:
-    """Backfill a participant who hasn't logged in yet but was just found via
-    search_participants (e.g. the person being invited to a team)."""
-    if _find_participant(participant_id) is not None:
-        return
-    client = get_supabase_client()
-    if client is None:
-        return
-    res = (
-        client.table(SUPABASE_APPLICATIONS_TABLE)
-        .select("id, email, first_name, last_name, checked_in, role")
-        .eq("id", participant_id)
-        .limit(1)
-        .execute()
-    )
-    if res.data:
-        remember_participant(_row_to_participant(res.data[0]))
-
-
 def get_participant(participant_id: str) -> Participant | None:
     return _find_participant(participant_id)
 
 
+# --- Supabase client + error translation (teams/invites) ---
+
+
+def _client() -> Client:
+    client = get_supabase_client()
+    if client is None:
+        raise RepositoryError("Team features are temporarily unavailable.")
+    return client
+
+
+# Unique-index violations (Postgres code 23505) -> the exact message the
+# constraint is protecting against. Matched by substring against the
+# error's message+details, since PostgREST doesn't expose the index name as
+# its own field.
+_CONSTRAINT_MESSAGES = {
+    "teams_name_key": "That team name is already taken.",
+    "team_members_one_team": "You are already on a team.",
+    "team_invites_one_pending": "That person already has a pending invite from this team.",
+}
+
+# Application-raised errors (Postgres code P0001, from supabase_dev_bootstrap.sql's
+# plpgsql functions) -> the exact message, keyed by the raise message text.
+_RAISED_MESSAGES = {
+    "team_full": "Team is already full (max 4 members).",
+    "invite_unavailable": "This invite is no longer available.",
+    "team_gone": "That team no longer exists.",
+    "team_not_found": "Team not found.",
+    "not_on_team": "You are not on this team.",
+}
+
+
+def _translate(err: APIError) -> RepositoryError:
+    if err.code == "23505":
+        haystack = f"{err.message or ''} {err.details or ''}"
+        for constraint, message in _CONSTRAINT_MESSAGES.items():
+            if constraint in haystack:
+                return RepositoryError(message)
+    elif err.code == "P0001":
+        key = (err.message or "").strip()
+        if key in _RAISED_MESSAGES:
+            return RepositoryError(_RAISED_MESSAGES[key])
+    logger.exception("Unhandled Supabase error (code=%s): %s", err.code, err.message)
+    return RepositoryError("Something went wrong. Please try again.")
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _parse_uuid(value: str) -> str | None:
+    # Guards against a stale token issued before ids were uuids -- treat it
+    # as an invalid session, not a 500.
+    try:
+        return str(uuid_lib.UUID(value))
+    except (ValueError, AttributeError, TypeError):
+        return None
+
+
+def _ilike_pattern(term: str) -> str:
+    return f"%{escape_ilike(term)}%"
+
+
+# --- Internal helpers: hydrating raw rows into the serialized shapes ---
+
+
+def _hydrate_participants(client: Client, ids: list[str]) -> dict[str, dict]:
+    if not ids:
+        return {}
+    rows = (
+        client.table("participant_directory")
+        .select("id, email, full_name, checked_in")
+        .in_("id", list(set(ids)))
+        .execute()
+        .data
+    )
+    return {row["id"]: row for row in rows}
+
+
+def _effective_leader_id(team_row: dict, member_rows: list[dict]) -> str:
+    # Defense in depth: leave_team_tx keeps leader_id consistent, but if it
+    # were ever out of sync, fall back to the earliest-joined member rather
+    # than pointing "leader" at someone no longer on the team.
+    leader_id = team_row["leader_id"]
+    if any(m["participant_id"] == leader_id for m in member_rows):
+        return leader_id
+    return member_rows[0]["participant_id"] if member_rows else leader_id
+
+
+def _serialize_team_row(team_row: dict, member_rows: list[dict], people: dict[str, dict]) -> dict:
+    leader_id = _effective_leader_id(team_row, member_rows)
+    members = []
+    for m in member_rows:
+        person = people.get(m["participant_id"])
+        if person is None:
+            continue
+        members.append(
+            {
+                "id": person["id"],
+                "email": person["email"],
+                "full_name": person["full_name"],
+                "checked_in": person["checked_in"],
+                "is_leader": person["id"] == leader_id,
+            }
+        )
+    return {
+        "id": team_row["id"],
+        "name": team_row["name"],
+        "leader_id": leader_id,
+        "track_slug": team_row["track_slug"],
+        "challenge_slugs": list(team_row.get("challenge_slugs") or []),
+        "members": members,
+    }
+
+
+def _get_team(client: Client, team_id: str) -> dict:
+    team_rows = client.table("teams").select("*").eq("id", team_id).execute().data
+    if not team_rows:
+        raise RepositoryError("Team not found.")
+    team_row = team_rows[0]
+    member_rows = (
+        client.table("team_members")
+        .select("participant_id, joined_at")
+        .eq("team_id", team_id)
+        .order("joined_at")
+        .execute()
+        .data
+    )
+    people = _hydrate_participants(client, [m["participant_id"] for m in member_rows])
+    return _serialize_team_row(team_row, member_rows, people)
+
+
+def _serialize_invites(client: Client, rows: list[dict]) -> list[dict]:
+    if not rows:
+        return []
+    team_ids = list({r["team_id"] for r in rows})
+    person_ids = list({r["invited_by"] for r in rows} | {r["invited_participant_id"] for r in rows})
+
+    team_rows = client.table("teams").select("id, name").in_("id", team_ids).execute().data
+    teams_by_id = {t["id"]: t["name"] for t in team_rows}
+
+    member_rows = client.table("team_members").select("team_id").in_("team_id", team_ids).execute().data
+    member_counts: dict[str, int] = {}
+    for m in member_rows:
+        member_counts[m["team_id"]] = member_counts.get(m["team_id"], 0) + 1
+
+    people = _hydrate_participants(client, person_ids)
+
+    serialized = []
+    for r in rows:
+        invited_by = people.get(r["invited_by"])
+        invited = people.get(r["invited_participant_id"])
+        serialized.append(
+            {
+                "id": r["id"],
+                "team_id": r["team_id"],
+                "status": r["status"],
+                "team_name": teams_by_id.get(r["team_id"], "(deleted team)"),
+                "member_count": member_counts.get(r["team_id"], 0),
+                "invited_by_name": invited_by["full_name"] if invited_by else "Someone",
+                "invited_participant_id": r["invited_participant_id"],
+                "invited_participant_name": invited["full_name"] if invited else "Someone",
+                "invited_participant_email": invited["email"] if invited else "",
+            }
+        )
+    return serialized
+
+
 # --- Reads ---
 
+
+def get_team_role(team_id: str, participant_id: str) -> str | None:
+    """'leader' | 'member' | None (not on that team, or no such team).
+
+    A 2-query alternative to fetching the full get_my_state() just to read
+    one field -- teams.py's mutating endpoints used to do exactly that
+    (6-12 round trips) purely to check leadership.
+    """
+    if _parse_uuid(team_id) is None:
+        # Without this, a garbage id reaches Postgres as invalid uuid input
+        # (22P02) and surfaces as an opaque 500 instead of the 404 teams.py
+        # already returns for "no such team."
+        return None
+    client = _client()
+    member = (
+        client.table("team_members")
+        .select("team_id")
+        .eq("team_id", team_id)
+        .eq("participant_id", participant_id)
+        .limit(1)
+        .execute()
+        .data
+    )
+    if not member:
+        return None
+    team = client.table("teams").select("leader_id").eq("id", team_id).limit(1).execute().data
+    if not team:
+        return None
+    return "leader" if team[0]["leader_id"] == participant_id else "member"
+
+
 def get_my_state(participant_id: str) -> dict:
-    team = _team_for_participant(participant_id)
-    incoming = [serialize_invite(i) for i in _invites if i.invited_participant_id == participant_id and i.status == "pending"]
-    outgoing = [serialize_invite(i) for i in _invites if team and i.team_id == team.id and i.status == "pending"]
+    client = _client()
+    membership = (
+        client.table("team_members").select("team_id").eq("participant_id", participant_id).execute().data
+    )
+    team_id = membership[0]["team_id"] if membership else None
+    team = _get_team(client, team_id) if team_id else None
+
+    incoming_rows = (
+        client.table("team_invites")
+        .select("*")
+        .eq("invited_participant_id", participant_id)
+        .eq("status", "pending")
+        .execute()
+        .data
+    )
+    outgoing_rows = []
+    if team_id:
+        outgoing_rows = (
+            client.table("team_invites")
+            .select("*")
+            .eq("team_id", team_id)
+            .eq("status", "pending")
+            .execute()
+            .data
+        )
+
+    # One batched pass over both directions instead of two separate calls --
+    # _serialize_invites already de-dupes its .in_() lookups, and incoming
+    # and outgoing invites usually reference overlapping teams/people, so
+    # serializing them together saves a round trip whenever both are
+    # non-empty. Rows come back in input order, so a single split works.
+    serialized = _serialize_invites(client, incoming_rows + outgoing_rows)
+    split = len(incoming_rows)
     return {
-        "team": serialize_team(team) if team else None,
-        "incoming_invites": incoming,
-        "outgoing_invites": outgoing,
+        "team": team,
+        "incoming_invites": serialized[:split],
+        "outgoing_invites": serialized[split:],
     }
 
 
 def search_participants(query: str, exclude_participant_id: str) -> list[dict]:
-    """Searches real checked-in applicants (not the in-memory registry --
-    someone can be searched/invited before they've ever logged in), filtered
-    to people not already on a team."""
     q = query.strip()
     if not q:
         return []
-    client = get_supabase_client()
-    if client is None:
-        return []
-
-    table = client.table(SUPABASE_APPLICATIONS_TABLE)
-    fields = "id, email, first_name, last_name, checked_in, role"
-    pattern = f"%{escape_ilike(q)}%"
-
-    candidates: dict[str, dict] = {}
-    for column in ("first_name", "last_name", "email"):
+    client = _client()
+    try:
         rows = (
-            table.select(fields)
-            .eq("checked_in", True)
-            .ilike(column, pattern)
-            .limit(20)
+            client.rpc(
+                "search_available_participants",
+                {"p_pattern": _ilike_pattern(q), "p_exclude": exclude_participant_id},
+            )
             .execute()
             .data
         )
-        for row in rows:
-            candidates[row["id"]] = row
-
-    results = []
-    for row in candidates.values():
-        if row["id"] == exclude_participant_id:
-            continue
-        if _team_for_participant(row["id"]) is not None:
-            continue
-        results.append(serialize_participant(_row_to_participant(row)))
-        if len(results) >= 5:
-            break
-    return results
+    except APIError as err:
+        raise _translate(err) from err
+    return [
+        {"id": r["id"], "email": r["email"], "full_name": r["full_name"], "checked_in": r["checked_in"]}
+        for r in rows
+    ]
 
 
 # --- Team lifecycle ---
 
+
 def create_team(participant_id: str, name: str) -> dict:
-    if _team_for_participant(participant_id) is not None:
+    client = _client()
+
+    existing = (
+        client.table("team_members").select("participant_id").eq("participant_id", participant_id).execute().data
+    )
+    if existing:
         raise RepositoryError("You are already on a team.")
+
     trimmed = name.strip()
     if not trimmed:
         raise RepositoryError("Team name is required.")
-    if any(t.name.lower() == trimmed.lower() for t in _teams):
-        raise RepositoryError("That team name is already taken.")
-    team = Team(f"t-{next(_team_id_seq)}", trimmed, participant_id, None, [], [participant_id])
-    _teams.append(team)
-    return serialize_team(team)
+
+    try:
+        result = client.table("teams").insert({"name": trimmed, "leader_id": participant_id}).execute()
+    except APIError as err:
+        raise _translate(err) from err
+    team_row = result.data[0]
+
+    try:
+        client.table("team_members").insert(
+            {"team_id": team_row["id"], "participant_id": participant_id}
+        ).execute()
+    except APIError as err:
+        # The one place two writes aren't atomic: clean up the orphaned team
+        # rather than leaving a team with no members behind.
+        client.table("teams").delete().eq("id", team_row["id"]).execute()
+        raise _translate(err) from err
+
+    return _get_team(client, team_row["id"])
 
 
-def update_team(team_id: str, *, track_slug: str | None = None, challenge_slugs: list[str] | None = None, name: str | None = None) -> dict:
-    team = _find_team(team_id)
-    if team is None:
-        raise RepositoryError("Team not found.")
+def update_team(
+    team_id: str, *, track_slug: str | None = None, challenge_slugs: list[str] | None = None, name: str | None = None
+) -> dict:
+    updates: dict = {"updated_at": _now_iso()}
     if name is not None:
         trimmed = name.strip()
         if not trimmed:
             raise RepositoryError("Team name is required.")
-        if any(t.name.lower() == trimmed.lower() and t.id != team_id for t in _teams):
-            raise RepositoryError("That team name is already taken.")
-        team.name = trimmed
+        updates["name"] = trimmed
     if track_slug is not None:
-        team.track_slug = track_slug or None
+        updates["track_slug"] = track_slug or None  # "" clears the track, matching prior behavior
     if challenge_slugs is not None:
-        team.challenge_slugs = challenge_slugs
-    return serialize_team(team)
+        updates["challenge_slugs"] = challenge_slugs
+
+    client = _client()
+    try:
+        result = client.table("teams").update(updates).eq("id", team_id).execute()
+    except APIError as err:
+        raise _translate(err) from err
+    if not result.data:
+        raise RepositoryError("Team not found.")
+    return _get_team(client, team_id)
 
 
 def leave_team(team_id: str, participant_id: str) -> dict:
-    team = _find_team(team_id)
-    if team is None:
-        raise RepositoryError("Team not found.")
-    if participant_id not in team.member_ids:
-        raise RepositoryError("You are not on this team.")
-    team.member_ids.remove(participant_id)
-
-    if not team.member_ids:
-        _teams.remove(team)
-        for invite in [i for i in _invites if i.team_id == team_id]:
-            _invites.remove(invite)
+    client = _client()
+    try:
+        deleted = client.rpc(
+            "leave_team_tx", {"p_team_id": team_id, "p_participant_id": participant_id}
+        ).execute().data
+    except APIError as err:
+        raise _translate(err) from err
+    if deleted:
         return {"deleted": True}
-
-    if team.leader_id == participant_id:
-        team.leader_id = team.member_ids[0]  # earliest-joined remaining member
-    return {"deleted": False, "team": serialize_team(team)}
+    return {"deleted": False, "team": _get_team(client, team_id)}
 
 
 # --- Invites ---
 
+
 def invite_participant(team_id: str, participant_id: str, invited_by: str) -> dict:
-    team = _find_team(team_id)
-    if team is None:
+    client = _client()
+
+    team_rows = client.table("teams").select("id").eq("id", team_id).execute().data
+    if not team_rows:
         raise RepositoryError("Team not found.")
-    if len(team.member_ids) >= MAX_TEAM_SIZE:
+
+    member_count = len(
+        client.table("team_members").select("participant_id").eq("team_id", team_id).execute().data
+    )
+    if member_count >= MAX_TEAM_SIZE:
         raise RepositoryError("Team is already full (max 4 members).")
-    if _team_for_participant(participant_id) is not None:
+
+    already_on_team = (
+        client.table("team_members").select("participant_id").eq("participant_id", participant_id).execute().data
+    )
+    if already_on_team:
         raise RepositoryError("That person is already on a team.")
-    if any(i.team_id == team_id and i.invited_participant_id == participant_id and i.status == "pending" for i in _invites):
-        raise RepositoryError("That person already has a pending invite from this team.")
-    _ensure_participant_known(participant_id)
-    invite = Invite(f"i-{next(_invite_id_seq)}", team_id, participant_id, invited_by, "pending")
-    _invites.append(invite)
-    return serialize_invite(invite)
+
+    try:
+        result = (
+            client.table("team_invites")
+            .insert({"team_id": team_id, "invited_participant_id": participant_id, "invited_by": invited_by})
+            .execute()
+        )
+    except APIError as err:
+        raise _translate(err) from err
+
+    return _serialize_invites(client, result.data)[0]
 
 
-def _find_pending_invite(invite_id: str) -> Invite | None:
-    return next((i for i in _invites if i.id == invite_id and i.status == "pending"), None)
-
-
-def cancel_invite(invite_id: str) -> None:
-    invite = next((i for i in _invites if i.id == invite_id), None)
-    if invite is None:
+def cancel_invite(team_id: str, invite_id: str) -> None:
+    client = _client()
+    result = (
+        client.table("team_invites")
+        .update({"status": "cancelled", "responded_at": _now_iso()})
+        .eq("id", invite_id)
+        .eq("team_id", team_id)
+        .eq("status", "pending")
+        .execute()
+    )
+    if not result.data:
         raise RepositoryError("Invite not found.")
-    invite.status = "cancelled"
 
 
-def accept_invite(invite_id: str, participant_id: str) -> None:
-    invite = _find_pending_invite(invite_id)
-    if invite is None or invite.invited_participant_id != participant_id:
-        raise RepositoryError("This invite is no longer available.")
-    if _team_for_participant(participant_id) is not None:
-        raise RepositoryError("You are already on a team.")
-    team = _find_team(invite.team_id)
-    if team is None:
-        raise RepositoryError("That team no longer exists.")
-    if len(team.member_ids) >= MAX_TEAM_SIZE:
-        raise RepositoryError("Team is already full (max 4 members).")
-
-    invite.status = "accepted"
-    team.member_ids.append(participant_id)
-
-    for other in _invites:
-        if other.invited_participant_id == participant_id and other.status == "pending" and other.id != invite_id:
-            other.status = "cancelled"
+def accept_invite(invite_id: str, participant_id: str) -> dict:
+    client = _client()
+    try:
+        team_id = (
+            client.rpc(
+                "accept_team_invite", {"p_invite_id": invite_id, "p_participant_id": participant_id}
+            )
+            .execute()
+            .data
+        )
+    except APIError as err:
+        raise _translate(err) from err
+    # accept_team_invite already returns the joined team's id -- reuse it
+    # instead of making the caller do a separate get_my_state() round trip.
+    return _get_team(client, str(team_id))
 
 
 def decline_invite(invite_id: str, participant_id: str) -> None:
-    invite = _find_pending_invite(invite_id)
-    if invite is None or invite.invited_participant_id != participant_id:
+    client = _client()
+    result = (
+        client.table("team_invites")
+        .update({"status": "declined", "responded_at": _now_iso()})
+        .eq("id", invite_id)
+        .eq("invited_participant_id", participant_id)
+        .eq("status", "pending")
+        .execute()
+    )
+    if not result.data:
         raise RepositoryError("This invite is no longer available.")
-    invite.status = "declined"
 
 
 # --- Announcements ---
