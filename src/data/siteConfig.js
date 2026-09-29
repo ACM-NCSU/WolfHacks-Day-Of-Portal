@@ -28,14 +28,7 @@ const siteConfig = {
       eyebrowPrefix: 'ACM AT NC STATE',
       subhead:
         "WolfHacks is a fall hackathon brought together by ACM at NC State, where students come together to build something in one weekend. It's open to all majors and all skill levels. You'll have access to workshops, sponsor networking, mentors, and yes, free food. All you have to do is build a project in 24 hours.",
-      // Hacker registration is closed. The portal's /apply route and backend
-      // endpoint are left in place (still reachable directly) but nothing on
-      // the landing page links to them anymore.
-      registrationOpen: false,
-      registerNote:
-        "Hacker registration is now closed. Thank you to everyone who applied! Keep an eye on your inbox for acceptances and event details. We're still looking for judges and mentors, though.",
       preRegisterUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSfVB5eG-ZD8I3EEUlYpEZzlQDA5_FBwCq3Noicah8exDBY4Yw/viewform',
-      judgeMentorApplicationUrl: 'https://forms.gle/Ht3VhNoYPgfp3RUS8',
       // Two theme-matched variants: light art on a dark card for dark mode,
       // dark art on a light card for light mode. Hero.jsx renders both and
       // CSS swaps which is visible based on [data-theme], so there's no flash.

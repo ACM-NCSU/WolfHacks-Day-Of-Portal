@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import siteConfig from '../data/siteConfig.js';
 
@@ -13,12 +14,15 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: 'easeOut' } },
 };
 
-export default function Register() {
+// Replaces the registration CTA -- hacker registration is closed, and once
+// the event is underway none of that copy matters anymore. This is the
+// site's main entry point into the day-of portal instead.
+export default function PortalCta() {
   const { event } = siteConfig;
   const prefersReducedMotion = useReducedMotion();
 
   return (
-    <section className="section register" id="register">
+    <section className="section portal-cta" id="portal">
       <div className="container">
         <motion.div
           variants={container}
@@ -27,35 +31,28 @@ export default function Register() {
           viewport={{ once: true, margin: '0px 0px -10% 0px', amount: 0.3 }}
         >
           <motion.p variants={item} className="eyebrow">
-            REGISTRATION
+            DAY OF THE EVENT
           </motion.p>
 
           <motion.h2 variants={item} className="section__heading">
-            Registration is closed
+            Head to the Portal
           </motion.h2>
 
           <motion.p variants={item} className="section__lede">
-            {event.hero.registerNote}
+            Check-in, the live schedule, your team, and announcements all live in the {event.name} Day-Of Portal.
           </motion.p>
 
-          <motion.div variants={item} className="register__actions">
-            <motion.a
-              className="btn btn--primary"
-              href={event.hero.judgeMentorApplicationUrl}
-              target="_blank"
-              rel="noreferrer"
+          <motion.div variants={item} className="portal-cta__actions">
+            <motion.div
               whileHover={prefersReducedMotion ? undefined : { y: -2, boxShadow: '0 6px 18px rgba(200, 16, 46, 0.45)' }}
               whileTap={prefersReducedMotion ? undefined : { scale: 0.97 }}
               transition={{ duration: 0.15 }}
             >
-              Apply to Judge / Mentor
-            </motion.a>
+              <Link className="btn btn--primary" to="/portal">
+                Go to Portal
+              </Link>
+            </motion.div>
           </motion.div>
-
-          <motion.a variants={item} href="#faq" className="scroll-cue">
-            Got questions? See the FAQ
-            <span className="scroll-cue__arrow" aria-hidden="true">&darr;</span>
-          </motion.a>
         </motion.div>
       </div>
     </section>

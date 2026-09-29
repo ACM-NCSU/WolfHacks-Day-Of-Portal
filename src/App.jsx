@@ -1,10 +1,10 @@
-import { Routes, Route, Navigate, Link } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import Starfield from './components/Starfield.jsx';
 import ThemeToggle from './components/ThemeToggle.jsx';
 import TrustBadge from './components/TrustBadge.jsx';
 import Hero from './components/Hero.jsx';
-import Register from './components/Register.jsx';
+import PortalCta from './components/PortalCta.jsx';
 import Sponsors from './components/Sponsors.jsx';
 import Faq from './components/Faq.jsx';
 import Location from './components/Location.jsx';
@@ -23,11 +23,8 @@ function LandingPage() {
       <div className="site-glow" aria-hidden="true" />
       <ThemeToggle />
       <TrustBadge />
-      <Link to="/portal" className="btn btn--primary site-portal-cta">
-        Portal
-      </Link>
       <Hero />
-      <Register />
+      <PortalCta />
       <Sponsors />
       <Faq />
       <Location />
