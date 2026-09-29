@@ -18,8 +18,9 @@ hydrate participant data live from Supabase instead of this cache.
 import logging
 import uuid as uuid_lib
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from itertools import count
+from zoneinfo import ZoneInfo
 
 from postgrest.exceptions import APIError
 from supabase import Client
@@ -63,25 +64,34 @@ class ScheduleItem:
     end_time: datetime
 
 
-def _seed_schedule() -> list[ScheduleItem]:
-    # Anchored to *this process's* start time rather than the real event date
-    # so "current" and "next" have something to point at in local dev right
-    # now, not just on the actual day.
-    now = datetime.now(timezone.utc)
+_EVENT_TZ = ZoneInfo("America/New_York")
 
-    def at(hours_from_now: float) -> datetime:
-        return now + timedelta(hours=hours_from_now)
+
+def _seed_schedule() -> list[ScheduleItem]:
+    # The real WolfHacks 2026 schedule (Oct 3-4, matching siteConfig's
+    # event.date/countdownTarget), in the event's local timezone so
+    # "current"/"next" line up correctly no matter where a viewer is.
+    def day1(hour: int, minute: int = 0) -> datetime:
+        return datetime(2026, 10, 3, hour, minute, tzinfo=_EVENT_TZ)
+
+    def day2(hour: int, minute: int = 0) -> datetime:
+        return datetime(2026, 10, 4, hour, minute, tzinfo=_EVENT_TZ)
 
     return [
-        ScheduleItem("s-1", "Opening Ceremony", "Talley Student Union Ballroom", at(-3), at(-2.5)),
-        ScheduleItem("s-2", "Team Formation & Icebreakers", None, at(-2.5), at(-1.5)),
-        ScheduleItem("s-3", "Workshop: Intro to Git", "Room 3210", at(-1.5), at(-1)),
-        ScheduleItem("s-4", "Hacking Block 1", "Main Hacking Hall", at(-1), at(1)),
-        ScheduleItem("s-5", "Lunch", "Talley Student Union Ballroom", at(1), at(1.5)),
-        ScheduleItem("s-6", "Workshop: Debugging Like a Pro", "Room 3210", at(1.5), at(2.5)),
-        ScheduleItem("s-7", "Hacking Block 2", "Main Hacking Hall", at(2.5), at(5)),
-        ScheduleItem("s-8", "Judging", "Main Hacking Hall", at(5), at(6)),
-        ScheduleItem("s-9", "Closing Ceremony", "Talley Student Union Ballroom", at(6), at(6.5)),
+        ScheduleItem("s-1", "Check-In", None, day1(9, 0), day1(10, 0)),
+        ScheduleItem("s-2", "Sponsorship Fair", None, day1(9, 0), day1(10, 0)),
+        ScheduleItem("s-3", "Opening Ceremony", None, day1(10, 0), day1(10, 30)),
+        ScheduleItem("s-4", "Team Formation", None, day1(10, 30), day1(11, 0)),
+        ScheduleItem("s-5", "Competition Begins", None, day1(11, 0), day1(11, 15)),
+        ScheduleItem("s-6", "Lunch", None, day1(12, 0), day1(13, 0)),
+        ScheduleItem("s-7", "Mentor Check-In", None, day1(14, 0), day1(15, 30)),
+        ScheduleItem("s-8", "Dinner", None, day1(18, 0), day1(19, 0)),
+        ScheduleItem("s-9", "Breakfast", None, day2(9, 0), day2(10, 0)),
+        ScheduleItem("s-10", "Project Submissions Due", None, day2(11, 0), day2(11, 15)),
+        ScheduleItem("s-11", "Lunch", None, day2(11, 30), day2(12, 30)),
+        ScheduleItem("s-12", "Judging", None, day2(12, 30), day2(14, 30)),
+        ScheduleItem("s-13", "Closing Ceremony", None, day2(15, 0), day2(15, 30)),
+        ScheduleItem("s-14", "Event Ends", None, day2(16, 0), day2(16, 15)),
     ]
 
 

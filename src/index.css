@@ -1498,6 +1498,29 @@ button.team-chip--selected:hover { color: var(--cream); }
 /* ---------- Schedule ---------- */
 
 .schedule-list { margin: 0; display: flex; flex-direction: column; gap: 0; }
+
+.schedule-day-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 20px 0 8px;
+  border-bottom: 1px solid var(--line);
+}
+.schedule-day-heading:first-child { padding-top: 0; }
+.schedule-day-heading__label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--red);
+}
+.schedule-day-heading__date {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--steel-dark);
+}
+
 .schedule-item {
   display: flex;
   align-items: center;

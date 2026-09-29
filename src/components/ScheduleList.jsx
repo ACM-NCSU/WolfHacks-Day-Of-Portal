@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import ScheduleEditForm from './ScheduleEditForm.jsx';
 import { findNextItem, getItemStatus } from '../lib/scheduleStatus.js';
 
 const timeFormatter = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
+const dayFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
 export default function ScheduleList({ schedule, now, canEdit, onChanged }) {
   const [editingId, setEditingId] = useState(null);
@@ -13,21 +14,41 @@ export default function ScheduleList({ schedule, now, canEdit, onChanged }) {
     return <p className="team-card__note">No schedule yet.</p>;
   }
 
+  let lastDateKey = null;
+  let dayNumber = 0;
+
   return (
     <ul className="schedule-list">
       {schedule.map((item) => {
+        const startDate = new Date(item.start_time);
+        const dateKey = startDate.toDateString();
+        const isNewDay = dateKey !== lastDateKey;
+        if (isNewDay) {
+          lastDateKey = dateKey;
+          dayNumber += 1;
+        }
+        const dayHeading = isNewDay && (
+          <li className="schedule-day-heading">
+            <span className="schedule-day-heading__label">Day {dayNumber}</span>
+            <span className="schedule-day-heading__date">{dayFormatter.format(startDate)}</span>
+          </li>
+        );
+
         if (editingId === item.id) {
           return (
-            <li className="schedule-item schedule-item--editing" key={item.id}>
-              <ScheduleEditForm
-                item={item}
-                onCancel={() => setEditingId(null)}
-                onSaved={async () => {
-                  setEditingId(null);
-                  await onChanged();
-                }}
-              />
-            </li>
+            <Fragment key={item.id}>
+              {dayHeading}
+              <li className="schedule-item schedule-item--editing">
+                <ScheduleEditForm
+                  item={item}
+                  onCancel={() => setEditingId(null)}
+                  onSaved={async () => {
+                    setEditingId(null);
+                    await onChanged();
+                  }}
+                />
+              </li>
+            </Fragment>
           );
         }
 
@@ -39,34 +60,37 @@ export default function ScheduleList({ schedule, now, canEdit, onChanged }) {
         const showLocation = (itemStatus === 'current' || isNext) && item.location;
 
         return (
-          <li className={`schedule-item schedule-item--${itemStatus}`} key={item.id}>
-            <div className="schedule-item__time">
-              {timeFormatter.format(new Date(item.start_time))}
-              {' – '}
-              {timeFormatter.format(new Date(item.end_time))}
-            </div>
-            <div className="schedule-item__body">
-              <div className="schedule-item__title-row">
-                <span className="schedule-item__title">{item.title}</span>
-                {itemStatus === 'current' && (
-                  <span className="schedule-item__badge">Happening now</span>
-                )}
-                {itemStatus !== 'current' && isNext && (
-                  <span className="schedule-item__badge schedule-item__badge--next">Next</span>
-                )}
+          <Fragment key={item.id}>
+            {dayHeading}
+            <li className={`schedule-item schedule-item--${itemStatus}`}>
+              <div className="schedule-item__time">
+                {timeFormatter.format(startDate)}
+                {' – '}
+                {timeFormatter.format(new Date(item.end_time))}
               </div>
-              {showLocation && <div className="schedule-item__location">{item.location}</div>}
-            </div>
-            {canEdit && (
-              <button
-                className="btn btn--ghost schedule-item__edit"
-                type="button"
-                onClick={() => setEditingId(item.id)}
-              >
-                Adjust
-              </button>
-            )}
-          </li>
+              <div className="schedule-item__body">
+                <div className="schedule-item__title-row">
+                  <span className="schedule-item__title">{item.title}</span>
+                  {itemStatus === 'current' && (
+                    <span className="schedule-item__badge">Happening now</span>
+                  )}
+                  {itemStatus !== 'current' && isNext && (
+                    <span className="schedule-item__badge schedule-item__badge--next">Next</span>
+                  )}
+                </div>
+                {showLocation && <div className="schedule-item__location">{item.location}</div>}
+              </div>
+              {canEdit && (
+                <button
+                  className="btn btn--ghost schedule-item__edit"
+                  type="button"
+                  onClick={() => setEditingId(item.id)}
+                >
+                  Adjust
+                </button>
+              )}
+            </li>
+          </Fragment>
         );
       })}
     </ul>
