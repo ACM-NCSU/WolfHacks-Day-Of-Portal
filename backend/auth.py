@@ -93,9 +93,12 @@ def get_and_backfill_user(
             return matched
 
     # Match by Email or Discord Username
+    # ilike (no wildcards) does a case-insensitive exact match -- applications.email
+    # isn't normalized to lowercase at submission time, so a plain .eq here would
+    # miss anyone who applied with a mixed-case email.
     conditions = []
     if email:
-        conditions.append(f"email.eq.{email}")
+        conditions.append(f"email.ilike.{email}")
     if discord_username:
         conditions.append(f"discord_username.eq.{discord_username}")
 
@@ -137,9 +140,9 @@ def check_user_registration(email: str | None = None, discord_username: str | No
 
     query = client.table(SUPABASE_APPLICATIONS_TABLE).select("id")
     if email and discord_username:
-        response = query.or_(f"email.eq.{email},discord_username.eq.{discord_username}").execute()
+        response = query.or_(f"email.ilike.{email},discord_username.eq.{discord_username}").execute()
     elif email:
-        response = query.eq("email", email).execute()
+        response = query.ilike("email", email).execute()
     elif discord_username:
         response = query.eq("discord_username", discord_username).execute()
     else:
