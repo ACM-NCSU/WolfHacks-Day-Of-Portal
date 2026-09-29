@@ -2,9 +2,12 @@ import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import Starfield from './components/Starfield.jsx';
 import ThemeToggle from './components/ThemeToggle.jsx';
+import TrustBadge from './components/TrustBadge.jsx';
 import Hero from './components/Hero.jsx';
 import Register from './components/Register.jsx';
+import Sponsors from './components/Sponsors.jsx';
 import Faq from './components/Faq.jsx';
+import Location from './components/Location.jsx';
 import Footer from './components/Footer.jsx';
 import ApplyPage from './components/ApplyPage.jsx';
 import ThankYouPage from './components/ThankYouPage.jsx';
@@ -19,12 +22,15 @@ function LandingPage() {
       <Starfield />
       <div className="site-glow" aria-hidden="true" />
       <ThemeToggle />
+      <TrustBadge />
       <Link to="/portal" className="btn btn--primary site-portal-cta">
         Portal
       </Link>
       <Hero />
       <Register />
+      <Sponsors />
       <Faq />
+      <Location />
       <Footer />
       <Analytics />
     </>

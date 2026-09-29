@@ -13,12 +13,12 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: 'easeOut' } },
 };
 
-export default function Register() {
+export default function Location() {
   const { event } = siteConfig;
   const prefersReducedMotion = useReducedMotion();
 
   return (
-    <section className="section register" id="register">
+    <section className="section location" id="location">
       <div className="container">
         <motion.div
           variants={container}
@@ -27,35 +27,28 @@ export default function Register() {
           viewport={{ once: true, margin: '0px 0px -10% 0px', amount: 0.3 }}
         >
           <motion.p variants={item} className="eyebrow">
-            REGISTRATION
+            LOCATION
           </motion.p>
 
           <motion.h2 variants={item} className="section__heading">
-            Registration is closed
+            Duke Energy Hall
           </motion.h2>
 
           <motion.p variants={item} className="section__lede">
-            {event.hero.registerNote}
+            Join us in person at NC State University for {event.name}! We'll be in Duke Energy Hall, which is inside Hunt Library.
           </motion.p>
 
-          <motion.div variants={item} className="register__actions">
-            <motion.a
-              className="btn btn--primary"
-              href={event.hero.judgeMentorApplicationUrl}
-              target="_blank"
-              rel="noreferrer"
-              whileHover={prefersReducedMotion ? undefined : { y: -2, boxShadow: '0 6px 18px rgba(200, 16, 46, 0.45)' }}
-              whileTap={prefersReducedMotion ? undefined : { scale: 0.97 }}
-              transition={{ duration: 0.15 }}
-            >
-              Apply to Judge / Mentor
-            </motion.a>
+          <motion.div variants={item} className="location__map-wrap">
+            <iframe
+            title="WolfHacks Event Location Map"
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d437.45751001207196!2d-78.67663554013411!3d35.76920978387624!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89acf5759f591f41%3A0xbe0266269ce37f59!2sJames%20B.%20Hunt%20Jr.%20Library!5e0!3m2!1sen!2sus!4v1787167462354!5m2!1sen!2sus"
+            width="100%"
+            height="400"
+            allowFullScreen=""
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            ></iframe>
           </motion.div>
-
-          <motion.a variants={item} href="#faq" className="scroll-cue">
-            Got questions? See the FAQ
-            <span className="scroll-cue__arrow" aria-hidden="true">&darr;</span>
-          </motion.a>
         </motion.div>
       </div>
     </section>

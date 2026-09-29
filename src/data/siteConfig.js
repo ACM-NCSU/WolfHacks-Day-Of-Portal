@@ -8,7 +8,7 @@ const siteConfig = {
   event: {
     name: 'WolfHacks',
     date: 'Oct 3-4, 2026',
-    location: 'Centennial Campus, Raleigh, NC',
+    location: 'Duke Energy Hall, Raleigh, NC',
     countdownTarget: '2026-10-03T09:00:00',
     // Placeholder: 24 hours after countdownTarget, WolfHacks' usual hackathon
     // length. Drives the "time left in the hackathon" timer on the portal
@@ -21,25 +21,21 @@ const siteConfig = {
       url: 'https://acm-ncsu.github.io/about/',
     },
 
-    // MLH trust badge, same mechanism as the original boilerplate template.
-    // year/color "2017"/"white" is the only combo that currently resolves to a
-    // real image at MLH's asset host (verified directly). It's their generic
-    // demo badge, not tied to a real date. Region "na" is correct for NC State.
-    // Swap these once you generate your real badge from MLH's organizer dashboard.
-    trustBadge: {
-      year: '2017',
-      region: 'na',
-      color: 'white',
-    },
+    codeOfConduct:
+      'https://github.com/yashovardhan/mlh-hackathon-organizer-guide/blob/e1f777578c8c5c905dcebc5b506c1f93f4c613b4/CONDUCT.md',
 
     hero: {
       eyebrowPrefix: 'ACM AT NC STATE',
       subhead:
         "WolfHacks is a fall hackathon brought together by ACM at NC State, where students come together to build something in one weekend. It's open to all majors and all skill levels. You'll have access to workshops, sponsor networking, mentors, and yes, free food. All you have to do is build a project in 24 hours.",
+      // Hacker registration is closed. The portal's /apply route and backend
+      // endpoint are left in place (still reachable directly) but nothing on
+      // the landing page links to them anymore.
+      registrationOpen: false,
       registerNote:
-        'Registration is open. Complete your application below to join WolfHacks 2026.',
+        "Hacker registration is now closed. Thank you to everyone who applied! Keep an eye on your inbox for acceptances and event details. We're still looking for judges and mentors, though.",
       preRegisterUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSfVB5eG-ZD8I3EEUlYpEZzlQDA5_FBwCq3Noicah8exDBY4Yw/viewform',
-      applicationUrl: '/apply',
+      judgeMentorApplicationUrl: 'https://forms.gle/Ht3VhNoYPgfp3RUS8',
       // Two theme-matched variants: light art on a dark card for dark mode,
       // dark art on a light card for light mode. Hero.jsx renders both and
       // CSS swaps which is visible based on [data-theme], so there's no flash.
@@ -66,14 +62,19 @@ const siteConfig = {
             'No. Anyone over the age of 18 is eligible to attend, whether or not you are a university student.',
         },
         {
-          question: 'Do I need a team, or experience, to apply?',
+          question: 'Do I need a team, or experience, to participate?',
           answer:
-            "No to both. You can apply solo and form a team at the event, and total beginners are welcome — there will be workshops and mentors all weekend. Teams should be between 2 and 4 people, and we'll have a team-building activity right after opening ceremony if you'd like to find teammates.",
+            "No to both. You can come solo and form a team at the event, and total beginners are welcome — there will be workshops and mentors all weekend. Teams should be between 2 and 4 people, and we'll have a team-building activity right after opening ceremony if you'd like to find teammates.",
         },
         {
           question: 'Where is the event, and do I have to stay overnight?',
           answer:
-            "Centennial Campus, NC State University, Raleigh, NC. The event is in person. Exact building and room details go out closer to the event. Parking is free on Centennial Campus from 5 PM Friday to 7 AM Monday. You don't have to stay overnight — you're welcome to leave and come back if you'd prefer.",
+            "Duke Energy Hall, NC State University, Raleigh, NC. The event is in person. Parking is free on Centennial Campus from 5 PM Friday to 7 AM Monday. You don't have to stay overnight — you're welcome to leave and come back if you'd prefer.",
+        },
+        {
+          question: 'Will you reimburse travel costs?',
+          answer:
+            "We're unable to provide reimbursement for travel or other costs incurred to reach the event.",
         },
         {
           question: 'What kind of activities will there be?',
@@ -81,12 +82,11 @@ const siteConfig = {
             'We will post the schedule closer to the event. There will be workshops and activities to take a break and meet other hackers and our wonderful sponsors.',
         },
         {
-          question: 'Are you sending out acceptances? Is there a deadline to apply?',
-          // TODO: fill in the actual number of days before the event acceptances go out.
+          question: 'Can I still register? When will I hear about acceptances?',
           answerBefore:
-            'We will send out acceptances a few days before the event. If you need earlier confirmation to book travel, please reach out to our team at ',
+            "Hacker registration is closed because we've reached the number of hackers we can support. If you applied, we'll email acceptances a few days before the event. If you have questions about your application, reach out to our team at ",
           link: { text: 'acmchapter-org@ncsu.edu', url: 'mailto:acmchapter-org@ncsu.edu' },
-          answerAfter: '. Applications will close once we reach the maximum amount of hackers we can support.',
+          answerAfter: '.',
         },
         {
           question: 'I have a different question!',
@@ -96,6 +96,44 @@ const siteConfig = {
         },
       ],
     },
+
+    sponsors: [
+      {
+        name: 'Institute for Advanced Analytics',
+        logoUrl: 'images/sponsors/institute-for-advanced-analytics.png',
+        // Sponsor's black wordmark is invisible on the dark theme's card, so
+        // a recolored (black -> cream) variant swaps in there. See darkLogoUrl
+        // usage in Sponsors.jsx.
+        logoUrlDark: 'images/sponsors/institute-for-advanced-analytics-dark.png',
+        url: 'https://analytics.ncsu.edu/',
+      },
+      {
+        name: 'AI @ NC State',
+        logoUrl: 'images/sponsors/ai-at-nc-state.png',
+        logoUrlDark: 'images/sponsors/ai-at-nc-state-dark.png',
+        url: 'https://ai.ncsu.edu/',
+      },
+      {
+        name: 'Pure Buttons',
+        logoUrl: 'images/sponsors/pure-buttons.png',
+        url: 'https://www.purebuttons.com/',
+      },
+      {
+        name: 'Kenan Institute for Engineering, Technology & Science',
+        logoUrl: 'images/sponsors/KIETS-State-Logo.png',
+        // White-lettered variant generated from KIETS-State-Logo.png for the
+        // dark theme; the sponsor's own white version is the stacked layout.
+        logoUrlDark: 'images/sponsors/kenan-institute-dark.png',
+        url: 'https://kenan.ncsu.edu/',
+      },
+      {
+        name: 'Center for Geospatial Analytics',
+        logoUrl: 'images/sponsors/cgaBlack.png',
+        logoUrlDark: 'images/sponsors/cgaWhite.png',
+        url: 'https://cnr.ncsu.edu/geospatial/',
+      },
+    ],
+    sponsorsMoreComingSoon: true,
 
     registerThanksMessage: "You'll receive more information closer to the hackathon.",
 
