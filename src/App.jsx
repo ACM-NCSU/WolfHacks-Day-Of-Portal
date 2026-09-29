@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import Starfield from './components/Starfield.jsx';
 import ThemeToggle from './components/ThemeToggle.jsx';
@@ -19,6 +19,9 @@ function LandingPage() {
       <Starfield />
       <div className="site-glow" aria-hidden="true" />
       <ThemeToggle />
+      <Link to="/portal" className="btn btn--primary site-portal-cta">
+        Portal
+      </Link>
       <Hero />
       <Register />
       <Faq />

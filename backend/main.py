@@ -117,10 +117,10 @@ SPREADSHEET_ID = os.getenv(
 SHEETS_RANGE = os.getenv("GOOGLE_SHEETS_RANGE", "Applications!A:X")
 
 app.include_router(auth_router)
+app.include_router(teams_router)
 app.include_router(schedule_router)
 app.include_router(announcements_router)
 app.include_router(meals_router)
-app.include_router(teams_router)
 
 app.add_middleware(
     CORSMiddleware,

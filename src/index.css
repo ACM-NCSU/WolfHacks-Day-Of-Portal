@@ -98,6 +98,23 @@ body {
 
 .theme-toggle:hover { border-color: var(--red); color: var(--red); }
 
+.site-portal-cta {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  padding: 10px 20px;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .site-portal-cta {
+    top: 14px;
+    right: 14px;
+    padding: 8px 14px;
+  }
+}
+
 .site-stars {
   position: fixed;
   inset: 0;
