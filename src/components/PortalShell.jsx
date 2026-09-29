@@ -5,10 +5,12 @@ import WolfMark from './WolfMark.jsx';
 import Countdown from './Countdown.jsx';
 import SchedulePage from './SchedulePage.jsx';
 import AnnouncementsPage from './AnnouncementsPage.jsx';
+import AnnouncementBanner from './AnnouncementBanner.jsx';
 import MealsPage from './MealsPage.jsx';
 import CheckInSection from './CheckInSection.jsx';
 import TeamDashboard from './TeamDashboard.jsx';
 import usePortalSession from '../hooks/usePortalSession.js';
+import useAnnouncements from '../hooks/useAnnouncements.js';
 import PORTAL_SECTIONS from '../data/portalSections.js';
 import siteConfig from '../data/siteConfig.js';
 
@@ -30,6 +32,7 @@ const SECTION_COMPONENTS = {
 // Supabase session check from re-running on every nav click.
 export default function PortalShell() {
   const { participant, status: sessionStatus, logout } = usePortalSession();
+  const { announcements } = useAnnouncements();
 
   // Anonymous visitors are redirected to /portal/login by usePortalSession;
   // don't flash portal content while that navigation is in flight.
@@ -51,6 +54,7 @@ export default function PortalShell() {
   return (
     <>
       <Starfield />
+      <AnnouncementBanner announcements={announcements} />
       <ThemeToggle />
       <main className="portal-shell">
         <div className="container portal-shell__container">
