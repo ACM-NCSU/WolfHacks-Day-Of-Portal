@@ -112,8 +112,8 @@ export function PortalOverview() {
         <h1 className="section__heading">Keep building.</h1>
         <Countdown target={event.hackathonEndTarget} />
         <p className="portal-shell__placeholder-note" style={{ marginTop: 12 }}>
-          Placeholder timer -- it'll count down the real 24-hour hackathon window on the actual
-          event day once the final schedule is locked in.
+          Counts down to the Day 2 project submissions deadline -- see the Schedule tab for the
+          full agenda.
         </p>
       </div>
 
@@ -128,24 +128,15 @@ export function PortalOverview() {
       <div className="team-card">
         <p className="team-card__title">Venue &amp; parking</p>
         <p className="team-card__note">
-          Placeholder -- exact building, room numbers, and parking instructions for {event.location}{' '}
-          will be posted here once they're finalized.
-        </p>
-      </div>
-
-      <div className="team-card">
-        <p className="team-card__title">WiFi</p>
-        <p className="team-card__note">
-          Placeholder -- network name and password will be posted here and announced at opening
-          ceremony.
+          {event.location}, inside the James B. Hunt Jr. Library on NC State's Centennial Campus.
+          Parking is free on Centennial Campus from 5 PM Friday to 7 AM Monday.
         </p>
       </div>
 
       <div className="team-card">
         <p className="team-card__title">Need help?</p>
         <p className="team-card__note">
-          Placeholder -- look for staff wearing organizer badges, ask in the event Discord, or
-          email{' '}
+          Look for staff wearing organizer badges, ask in the event Discord, or email{' '}
           <a href="mailto:acmchapter-org@ncsu.edu">acmchapter-org@ncsu.edu</a>.
         </p>
       </div>
@@ -154,7 +145,7 @@ export function PortalOverview() {
         <p className="team-card__title">Code of conduct</p>
         <p className="team-card__note">
           WolfHacks follows the{' '}
-          <a href="https://github.com/MLH/mlh-policies/blob/main/code-of-conduct.md" target="_blank" rel="noreferrer">
+          <a href={event.codeOfConduct} target="_blank" rel="noreferrer">
             MLH Code of Conduct
           </a>
           . Report any concerns to a staff member immediately.

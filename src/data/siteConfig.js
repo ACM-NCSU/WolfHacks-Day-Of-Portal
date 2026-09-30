@@ -10,11 +10,12 @@ const siteConfig = {
     date: 'Oct 3-4, 2026',
     location: 'Duke Energy Hall, Raleigh, NC',
     countdownTarget: '2026-10-03T09:00:00',
-    // Placeholder: 24 hours after countdownTarget, WolfHacks' usual hackathon
-    // length. Drives the "time left in the hackathon" timer on the portal
-    // overview page. Once the real day-of schedule is locked in, point this
-    // at the actual closing-ceremony/submission-deadline timestamp instead.
-    hackathonEndTarget: '2026-10-04T09:00:00',
+    // Drives the "time left in the hackathon" timer on the portal overview
+    // page. Matches "Competition Begins" (Day 1, 11:00) through "Project
+    // Submissions Due" (Day 2, 11:00) on the real schedule -- see
+    // backend/repository.py's _seed_schedule -- i.e. the actual 24-hour
+    // building window, not the whole two-day event.
+    hackathonEndTarget: '2026-10-04T11:00:00',
 
     acm: {
       name: 'ACM at NC State',
