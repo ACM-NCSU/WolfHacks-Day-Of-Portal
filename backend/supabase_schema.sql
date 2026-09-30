@@ -93,3 +93,12 @@ alter table applications add column if not exists checked_in_at timestamptz;
 
 -- Case-insensitive email is the primary lookup path for check-in search.
 create index if not exists applications_email_lower_idx on applications (lower(email));
+
+-- Meal check-in (backend/meals.py): one boolean per real meal slot on the
+-- schedule (see repository.py's _seed_schedule), set the first time an
+-- organizer scans that hacker's QR code for that meal and never unset --
+-- scanning again is rejected as already-scanned rather than toggling it.
+alter table applications add column if not exists meal_lunch_day1 boolean not null default false;
+alter table applications add column if not exists meal_dinner_day1 boolean not null default false;
+alter table applications add column if not exists meal_breakfast_day2 boolean not null default false;
+alter table applications add column if not exists meal_lunch_day2 boolean not null default false;

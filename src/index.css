@@ -1358,8 +1358,25 @@ a.acm-mention:hover { text-decoration: underline; }
   border: 1px solid var(--line);
 }
 
+.meals-scanner {
+  padding: 40px;
+}
+
+.meals-scanner .team-card__title {
+  font-size: 15px;
+}
+
+.meals-scanner .application-form__question {
+  font-size: 14px;
+}
+
+.meals-scanner .btn {
+  padding: 18px 32px;
+  font-size: 15px;
+}
+
 .meals-scanner__video-wrap {
-  max-width: 320px;
+  max-width: 480px;
   margin: 0 auto 16px;
   overflow: hidden;
   background: #000;
@@ -1376,9 +1393,35 @@ a.acm-mention:hover { text-decoration: underline; }
 }
 
 .meals-scanner__result {
-  margin-top: 16px;
-  padding-top: 16px;
+  margin-top: 24px;
+  padding-top: 24px;
   border-top: 1px solid var(--line);
+}
+
+.meals-scanner__result .team-card__title {
+  font-size: 20px;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--paper);
+  font-family: var(--font-display);
+}
+
+.meals-scanner__result .team-card__note {
+  font-size: 16px;
+}
+
+.meals-scanner__slot-picker {
+  max-width: 360px;
+  margin-bottom: 24px;
+}
+
+.meals-scanner__already {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid rgba(240, 169, 59, 0.4);
+  background: rgba(240, 169, 59, 0.12);
+  color: #f0a93b;
+  font-size: 14px;
 }
 
 .portal-shell__grid {

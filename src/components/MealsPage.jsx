@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import jsQR from 'jsqr';
-import { lookupDietaryInfo } from '../lib/mealsApi.js';
+import SelectField from './SelectField.jsx';
+import { listMealSlots, scanMeal } from '../lib/mealsApi.js';
 import { ApiError } from '../lib/api.js';
 
 // A hacker's own QR code just encodes their applications-table id (already
 // known client-side from /api/auth/me) -- no secret, just an identifier
-// staff use to look up dietary info at the food table.
+// staff use to mark a meal scanned at the food table.
 function HackerMealQR({ participant }) {
   const canvasRef = useRef(null);
 
@@ -19,25 +20,40 @@ function HackerMealQR({ participant }) {
     <div className="portal-shell__qr-card">
       <canvas ref={canvasRef} className="portal-shell__qr-canvas" aria-label="Your meal QR code" />
       <p className="portal-shell__placeholder-note">
-        Show this at the food table -- staff will scan it to check your dietary restrictions.
+        Show this at the food table -- staff will scan it to mark your meal.
       </p>
     </div>
   );
 }
 
-// Organizer-facing camera scanner: reads frames off a <video> feed into a
-// hidden <canvas>, decodes with jsQR, and looks up the scanned id's dietary
-// info once organizer-gated (backend/meals.py). The <video> stays mounted
-// at all times (just hidden via CSS) so the ref is attached before we try
-// to assign a camera stream to it.
+// Organizer-facing camera scanner: pick which of the 4 scheduled meals is
+// being handed out, then read frames off a <video> feed into a hidden
+// <canvas>, decode with jsQR, and scan the id against that meal slot
+// (backend/meals.py marks it consumed -- a repeat scan for the same meal is
+// rejected, not silently re-marked). The <video> stays mounted at all times
+// (just hidden via CSS) so the ref is attached before we try to assign a
+// camera stream to it.
 function OrganizerMealScanner() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const frameRef = useRef(null);
-  const [status, setStatus] = useState('idle'); // idle | scanning | looking-up | found | error
+  const [slots, setSlots] = useState([]);
+  const [selectedSlot, setSelectedSlot] = useState('');
+  const [status, setStatus] = useState('idle'); // idle | scanning | looking-up | found | already-scanned | error
   const [result, setResult] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    listMealSlots()
+      .then((data) => {
+        setSlots(data);
+        setSelectedSlot((current) => current || data[0]?.slug || '');
+      })
+      .catch((err) => {
+        console.error('Failed to load meal slots:', err);
+      });
+  }, []);
 
   function stopCamera() {
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
@@ -72,16 +88,22 @@ function OrganizerMealScanner() {
     stopCamera();
     setStatus('looking-up');
     try {
-      const data = await lookupDietaryInfo(participantId);
+      const data = await scanMeal(participantId, selectedSlot);
       setResult(data);
       setStatus('found');
     } catch (err) {
-      setErrorMessage(err instanceof ApiError ? err.message : 'Lookup failed. Please try again.');
-      setStatus('error');
+      if (err instanceof ApiError && err.status === 409) {
+        setErrorMessage(err.message);
+        setStatus('already-scanned');
+      } else {
+        setErrorMessage(err instanceof ApiError ? err.message : 'Scan failed. Please try again.');
+        setStatus('error');
+      }
     }
   }
 
   async function startScanning() {
+    if (!selectedSlot) return;
     setErrorMessage('');
     setResult(null);
     try {
@@ -99,13 +121,32 @@ function OrganizerMealScanner() {
 
   useEffect(() => () => stopCamera(), []);
 
+  const idle = status === 'idle' || status === 'error' || status === 'already-scanned';
+  const selectedLabel = slots.find((slot) => slot.slug === selectedSlot)?.label ?? '';
+
+  function handleSlotChange(_name, label) {
+    setSelectedSlot(slots.find((slot) => slot.label === label)?.slug ?? '');
+  }
+
   return (
-    <div className="team-card">
+    <div className="team-card meals-scanner">
       <p className="team-card__title">Scan a hacker&apos;s meal QR code</p>
 
-      {(status === 'idle' || status === 'error') && (
-        <button className="btn btn--primary" type="button" onClick={startScanning}>
-          {status === 'error' ? 'Try again' : 'Start scanning'}
+      <label className="meals-scanner__slot-picker">
+        <span className="application-form__question">Meal</span>
+        <SelectField
+          name="mealSlot"
+          value={selectedLabel}
+          onChange={handleSlotChange}
+          options={slots.map((slot) => slot.label)}
+          placeholder="Select a meal"
+          disabled={status === 'scanning' || status === 'looking-up'}
+        />
+      </label>
+
+      {idle && (
+        <button className="btn btn--primary" type="button" onClick={startScanning} disabled={!selectedSlot}>
+          {status === 'idle' ? 'Start scanning' : 'Try again'}
         </button>
       )}
 
@@ -114,7 +155,11 @@ function OrganizerMealScanner() {
       </div>
       <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-      {status === 'looking-up' && <p className="team-card__note">Looking up dietary info...</p>}
+      {status === 'looking-up' && <p className="team-card__note">Scanning...</p>}
+
+      {status === 'already-scanned' && errorMessage && (
+        <p className="meals-scanner__already" role="alert">{errorMessage}</p>
+      )}
 
       {status === 'error' && errorMessage && (
         <p className="team-card__error" role="alert">{errorMessage}</p>
