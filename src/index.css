@@ -335,6 +335,9 @@ a.acm-mention:hover { text-decoration: underline; }
 .checkin-page__result-email { font-family: var(--font-mono); font-size: 13px; color: var(--steel-dark); }
 .checkin-page__badge { font-family: var(--font-mono); font-size: 12px; padding: 6px 12px; border-radius: 2px; white-space: nowrap; }
 .checkin-page__badge--done { background: rgba(70, 180, 100, 0.15); color: #4cbf6f; border: 1px solid rgba(70, 180, 100, 0.4); }
+.checkin-page__stats { max-width: 320px; margin-bottom: 24px; }
+.checkin-page__stats-count { font-family: var(--font-display); font-size: 42px; font-weight: 700; color: var(--red); line-height: 1; }
+.checkin-page__stats-count span { font-family: var(--font-mono); font-size: 18px; font-weight: 500; color: var(--steel-dark); }
 .apply-success .btn { margin-top: 28px; }
 
 @media (max-width: 640px) {

@@ -476,6 +476,27 @@ def check_in_registrant(registrant_id: str, _: Participant = Depends(require_org
     return row
 
 
+@app.get("/api/checkin/stats")
+def checkin_stats(_: Participant = Depends(require_organizer)):
+    # Hackers only -- organizers/admins never check in through this flow, so
+    # counting them would inflate the headline number for no reason.
+    client = _require_supabase()
+    table = client.table(SUPABASE_APPLICATIONS_TABLE)
+
+    checked_in = (
+        table.select("id", count="exact", head=True)
+        .eq("role", "hacker")
+        .eq("checked_in", True)
+        .execute()
+    )
+    total = table.select("id", count="exact", head=True).eq("role", "hacker").execute()
+
+    return {
+        "checked_in": checked_in.count or 0,
+        "total_hackers": total.count or 0,
+    }
+
+
 @app.get("/api/checkin/verify")
 def verify_checked_in(email: str = Query(min_length=5, max_length=254)):
     # Intentionally unauthenticated (unlike search/check-in above): kept for

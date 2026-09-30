@@ -84,7 +84,10 @@ export default function PortalShell() {
             >
               Overview
             </NavLink>
-            {PORTAL_SECTIONS.filter((section) => !section.organizerOnly || participant.is_organizer).map((section) => (
+            {PORTAL_SECTIONS.filter((section) =>
+              (!section.organizerOnly || participant.is_organizer) &&
+              (!section.hackerOnly || !participant.is_organizer)
+            ).map((section) => (
               <NavLink
                 key={section.id}
                 to={section.path}

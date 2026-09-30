@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { apiFetch, ApiError } from '../lib/api.js';
 
 // Rendered inside PortalShell's 'checkin' section -- PortalShell already
@@ -10,6 +10,19 @@ export default function CheckInSection({ participant }) {
   const [status, setStatus] = useState('idle'); // idle | loading | error
   const [errorMessage, setErrorMessage] = useState('');
   const [checkingInId, setCheckingInId] = useState(null);
+  const [stats, setStats] = useState(null);
+
+  const refreshStats = useCallback(async () => {
+    try {
+      setStats(await apiFetch('/api/checkin/stats'));
+    } catch (err) {
+      console.error('Failed to load check-in stats:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (participant.is_organizer) refreshStats();
+  }, [participant.is_organizer, refreshStats]);
 
   async function handleSearch(event) {
     event.preventDefault();
@@ -34,6 +47,7 @@ export default function CheckInSection({ participant }) {
     try {
       const updated = await apiFetch(`/api/checkin/${id}`, { method: 'POST' });
       setResults((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+      refreshStats();
     } catch (err) {
       setErrorMessage(err instanceof ApiError ? err.message : 'Check-in failed. Please try again.');
     } finally {
@@ -66,6 +80,15 @@ export default function CheckInSection({ participant }) {
           registrants can log into the day-of portal.
         </p>
       </div>
+
+      {stats && (
+        <div className="team-card checkin-page__stats">
+          <p className="team-card__title">Hackers checked in</p>
+          <p className="checkin-page__stats-count">
+            {stats.checked_in} <span>/ {stats.total_hackers}</span>
+          </p>
+        </div>
+      )}
 
       <form className="checkin-page__search" onSubmit={handleSearch}>
         <label>

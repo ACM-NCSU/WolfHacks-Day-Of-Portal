@@ -4,8 +4,9 @@
 // here is what wires it into the shell's nav. A hacker's own check-in status
 // isn't a tab -- it's shown as a badge in the header instead (see
 // PortalShell.jsx). `organizerOnly` hides a tab from the nav for non-
-// organizers; CheckInSection also gates its own content as defense in depth
-// against someone hitting the URL directly.
+// organizers; `hackerOnly` does the reverse (organizers don't need a team to
+// hack on). Both CheckInSection and TeamDashboard also gate their own
+// content as defense in depth against someone hitting the URL directly.
 const PORTAL_SECTIONS = [
   {
     id: 'schedule',
@@ -22,6 +23,7 @@ const PORTAL_SECTIONS = [
     eyebrow: 'TEAM DASHBOARD',
     heading: 'Your team.',
     note: 'Will connect to the team dashboard (feature/team-dashboard).',
+    hackerOnly: true,
   },
   {
     id: 'checkin',

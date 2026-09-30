@@ -16,6 +16,20 @@ export default function TeamDashboard({ participant }) {
     setOutgoingInvites,
   } = useTeamState(participant);
 
+  if (participant.is_organizer) {
+    return (
+      <section>
+        <div className="portal-shell__intro">
+          <p className="eyebrow">TEAM</p>
+          <h1 className="section__heading">Participants only</h1>
+          <p className="section__lede">
+            The team dashboard is for hackers forming and managing their teams -- organizers don't need one.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section>
       <div className="portal-shell__intro">
