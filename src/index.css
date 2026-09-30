@@ -1237,6 +1237,8 @@ a.acm-mention:hover { text-decoration: underline; }
 
 .portal-shell__account { display: flex; align-items: center; gap: 14px; }
 
+.portal-shell__back { padding: 8px 16px; font-size: 13px; }
+
 .portal-shell__checkin-badge {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -1695,6 +1697,12 @@ button.team-chip { cursor: pointer; transition: border-color 0.15s ease, color 0
 button.team-chip:hover { border-color: var(--red); color: var(--red); }
 .team-chip--selected { background: var(--red); border-color: var(--red); color: var(--cream); }
 button.team-chip--selected:hover { color: var(--cream); }
+
+.tracks-page__list { margin: 4px 0 16px; padding-left: 20px; color: var(--steel-dark); font-size: 14px; line-height: 1.5; }
+.tracks-page__list li { margin-bottom: 4px; }
+.tracks-page__criteria { margin: 0; display: flex; flex-direction: column; gap: 16px; }
+.tracks-page__criteria-item dt { color: var(--paper); font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+.tracks-page__criteria-item dd { margin: 4px 0 0; color: var(--steel-dark); font-size: 14px; line-height: 1.5; }
 
 .team-member-list { margin: 0 0 20px; }
 .team-member { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }

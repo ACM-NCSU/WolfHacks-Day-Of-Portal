@@ -17,6 +17,14 @@ const PORTAL_SECTIONS = [
     note: 'Will connect to the live schedule feed (feature/live-schedule).',
   },
   {
+    id: 'tracks',
+    path: '/portal/tracks',
+    label: 'Tracks',
+    eyebrow: 'TRACKS',
+    heading: 'Pick a track, build something real.',
+    note: 'Sponsor tracks, problem statements, and the judging rubric.',
+  },
+  {
     id: 'team',
     path: '/portal/team',
     label: 'Team',

@@ -9,6 +9,7 @@ import AnnouncementBanner from './AnnouncementBanner.jsx';
 import MealsPage from './MealsPage.jsx';
 import CheckInSection from './CheckInSection.jsx';
 import TeamDashboard from './TeamDashboard.jsx';
+import TracksPage from './TracksPage.jsx';
 import usePortalSession from '../hooks/usePortalSession.js';
 import useAnnouncements from '../hooks/useAnnouncements.js';
 import PORTAL_SECTIONS from '../data/portalSections.js';
@@ -18,6 +19,7 @@ import siteConfig from '../data/siteConfig.js';
 // to the "Coming soon" placeholder below.
 const SECTION_COMPONENTS = {
   schedule: SchedulePage,
+  tracks: TracksPage,
   team: TeamDashboard,
   announcements: AnnouncementsPage,
   meals: MealsPage,
@@ -64,6 +66,7 @@ export default function PortalShell() {
               WolfHacks Portal
             </Link>
             <div className="portal-shell__account">
+              <a href="/" className="btn btn--ghost portal-shell__back">Back to main site</a>
               {!participant.is_organizer && (
                 <span
                   className={`portal-shell__checkin-badge ${participant.checked_in ? '' : 'portal-shell__checkin-badge--out'}`}

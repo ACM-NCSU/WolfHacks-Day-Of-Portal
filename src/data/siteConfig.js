@@ -131,13 +131,71 @@ const siteConfig = {
 
     registerThanksMessage: "You'll receive more information closer to the hackathon.",
 
-    // Placeholder content -- the real 2026 track/challenge list isn't final
-    // yet. Slugs are the stable identifier stored on a team; name/description
-    // are safe to edit freely.
+    // Real 2026 track list, one per sponsor challenge. Slugs are the stable
+    // identifier stored on a team (see TrackChallengePicker.jsx); name/
+    // description/etc are safe to edit freely. The richer fields (ideas,
+    // technologies, datasets, coreChallenge, dataScienceComponent) are
+    // optional and only rendered by TracksPage.jsx -- omit any that don't
+    // apply to a given track.
     tracks: [
-      { slug: 'open', name: 'Open Track', description: 'Build anything you want -- no theme required.' },
-      { slug: 'ai-ml', name: 'AI / ML', description: 'Projects that meaningfully use machine learning or AI.' },
-      { slug: 'sustainability', name: 'Sustainability', description: 'Projects tackling climate or environmental problems.' },
+      {
+        slug: 'geospatial-analytics',
+        name: 'Center for Geospatial Analytics',
+        description:
+          'Location matters! Use geospatial data to understand a pressing societal or environmental issue and help target action where it matters most.',
+        problemStatement:
+          'Use geospatial data (data linked to geographic locations) to understand a pressing societal or environmental issue, and develop a software solution that helps determine where to take action.',
+      },
+      {
+        slug: 'applied-ai-software',
+        name: 'Applied AI Software (Databricks)',
+        description:
+          'Build innovative software applications that leverage the Databricks platform and agentic AI to solve real-world problems for a wearable application with streaming data.',
+        ideas: [
+          'Create an AI agent that analyzes data and provides actionable insights.',
+          'Build an application that allows users to interact with and explore complex datasets using AI.',
+          'Develop an agentic system that can use tools, data, and APIs to complete multi-step tasks.',
+        ],
+        technologies: ['Databricks', 'Python', 'SQL', 'AI/ML', 'LLMs', 'Agentic AI'],
+        datasets: 'Wearable datasets containing multiple sessions will be provided.',
+      },
+      {
+        slug: 'applied-ai-hardware',
+        name: 'Applied AI Hardware',
+        description:
+          'Build IoT and edge-AI solutions using the STMicroelectronics SensorTile.box development board to collect, analyze, and act on real-world sensor data.',
+        ideas: [
+          'Develop a wearable use case that tracks motion and/or audio.',
+          'Build a model that detects patterns or anomalies in sensor data.',
+          'Deploy an ML model to IoT or edge devices.',
+        ],
+        technologies: ['STMicroelectronics hardware', 'Raspberry Pi', 'IoT Cloud', 'Python', 'ML/AI'],
+      },
+      {
+        slug: 'applied-ai-challenge',
+        name: 'Applied AI Challenge',
+        description:
+          'Connect IoT wearables to an intelligent dashboard hosted on Databricks -- an end-to-end solution that turns real-time sensor data into actionable insights. Functions as a combination of the Applied AI Software and Applied AI Hardware tracks.',
+        ideas: [
+          'Stream wearable data into Databricks.',
+          'Build a dashboard for real-time data visualization.',
+          'Use AI or analytics to identify trends, anomalies, or insights.',
+        ],
+        coreChallenge: 'How can real-time IoT data be transformed into actionable insights using Databricks?',
+      },
+      {
+        slug: 'advanced-analytics',
+        name: 'Institute for Advanced Analytics',
+        description:
+          'Students juggle deadlines across calendars, syllabi, and course sites, while study materials are scattered across PDFs, slides, and notes. Build an AI-powered dashboard that brings these resources together to help students organize their workload, prepare for exams, and understand their academic progress.',
+        ideas: [
+          'Calendar integration',
+          'AI-generated practice questions and flashcards',
+          'Study plans and progress tracking',
+        ],
+        dataScienceComponent:
+          "Every team trains a decision tree model on a synthetic end-of-semester student dataset (provided by WolfHacks) to predict whether a student is at risk of finishing a course with a D or F. Teams should use a held-out split, test on the held-out portion, evaluate the model, explain what it learns, and consider how its predictions could translate into actionable study advice.",
+      },
     ],
 
     challenges: [
@@ -145,6 +203,26 @@ const siteConfig = {
       { slug: 'best-sponsor-api', name: 'Best Use of a Sponsor API', description: 'Awarded to the team that best integrates a sponsor API or tool.' },
       { slug: 'best-first-hack', name: 'Best First Hack', description: 'For teams made up entirely of first-time hackathon participants.' },
     ],
+
+    // Judging rubric shown on the portal's Tracks tab. `general` applies to
+    // every team; `iaa` is additional criteria specific to the Institute for
+    // Advanced Analytics track (its dashboard has a data-science component
+    // the generic rubric doesn't cover).
+    judging: {
+      general: [
+        { label: 'Track', description: 'How well does the project address the problem statement and goals of the chosen track?' },
+        { label: 'Technology', description: 'How technically impressive is the project? Consider the difficulty of the technical challenges, creative use of technology, and how effectively different components work together. Did the technology make you say "Wow"?' },
+        { label: 'Design', description: 'How thoughtfully designed is the project for its intended users? Consider usability, interface design, accessibility, and the overall user experience.' },
+        { label: 'Execution', description: 'Does the hack work? Consider how much of the proposed solution was actually implemented, reliability, and how effectively the team executed its idea.' },
+      ],
+      iaa: [
+        { label: 'Track', description: 'How effectively does the solution support students in managing their workload, preparing for exams, and understanding their academic progress.' },
+        { label: 'Impact', description: "How useful is the project for its intended users? Consider whether the model's predictions and study recommendations provide actionable support that a student could realistically use." },
+        { label: 'Modeling', weighted: true, description: 'How effectively did the team develop and evaluate its decision tree model? Consider data cleaning, testing on held-out data, recall, overfitting, and comparison against the baseline.' },
+        { label: 'Communication', description: "How clearly does the team communicate its solution and technical approach? Consider the quality of the demo, visualizations, and plain-language explanation of the model's decisions." },
+        { label: 'Responsible AI', description: 'How thoughtfully does the team address responsible AI? Consider whether limitations are acknowledged, privacy is protected, AI use is disclosed, and risk flags are presented in a way that supports rather than discourages students.' },
+      ],
+    },
   },
 };
 
