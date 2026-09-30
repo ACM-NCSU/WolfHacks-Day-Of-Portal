@@ -9,12 +9,35 @@ import { supabase } from '../lib/supabase';
 // within each section, not by a separate page. Shape --
 // { participant, status, login, logout } -- matches the placeholder this
 // replaces, plus a 'loading' status while the session/role check is in flight.
+// Local-only escape hatch for when Discord OAuth's redirect can't point at
+// both localhost and the deployed domain at once (Supabase's Site URL is a
+// single value). Gated on import.meta.env.DEV so it's dead in a production
+// build even if VITE_SKIP_AUTH somehow leaked into a deployed env, and on an
+// explicit opt-in flag so real local auth testing still works by default.
+// Remove once the portal has its own local Supabase instance instead of
+// sharing the deployed one -- see .env.example.
+const SKIP_AUTH = import.meta.env.DEV && import.meta.env.VITE_SKIP_AUTH === 'true';
+const SKIP_AUTH_PARTICIPANT = {
+  id: 'dev-skip-auth',
+  full_name: 'Dev User',
+  email: 'dev@localhost',
+  role: import.meta.env.VITE_SKIP_AUTH_ROLE || 'hacker',
+  is_organizer: (import.meta.env.VITE_SKIP_AUTH_ROLE || 'hacker') === 'organizer',
+  checked_in: true,
+};
+
 export default function usePortalSession() {
-  const [status, setStatus] = useState('loading'); // 'loading' | 'anonymous' | 'authenticated'
-  const [participant, setParticipant] = useState(null);
+  const [status, setStatus] = useState(SKIP_AUTH ? 'authenticated' : 'loading'); // 'loading' | 'anonymous' | 'authenticated'
+  const [participant, setParticipant] = useState(SKIP_AUTH ? SKIP_AUTH_PARTICIPANT : null);
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (SKIP_AUTH) {
+      // eslint-disable-next-line no-console
+      console.warn('[usePortalSession] VITE_SKIP_AUTH is on -- using a fake participant, not real auth.');
+      return;
+    }
+
     let cancelled = false;
 
     async function loadSession() {
