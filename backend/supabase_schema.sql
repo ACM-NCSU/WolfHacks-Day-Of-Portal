@@ -102,3 +102,65 @@ alter table applications add column if not exists meal_lunch_day1 boolean not nu
 alter table applications add column if not exists meal_dinner_day1 boolean not null default false;
 alter table applications add column if not exists meal_breakfast_day2 boolean not null default false;
 alter table applications add column if not exists meal_lunch_day2 boolean not null default false;
+
+-- Announcements (backend/announcements.py): organizer broadcasts shown on
+-- the portal's Announcements tab and as a site-wide banner. Previously a
+-- plain in-memory list in repository.py, which silently lost or "flickered"
+-- announcements in production -- this backend deploys to Vercel as a
+-- serverless function, so different requests can land on different
+-- processes (or a freshly cold-started one) with no memory shared between
+-- them. author_name is captured at creation time rather than joined from
+-- applications, so it survives even if that application row is later
+-- removed, and reads never depend on any in-memory cache.
+create table if not exists announcements (
+  id uuid primary key default gen_random_uuid(),
+  message text not null,
+  author_id uuid not null references applications(id),
+  author_name text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists announcements_created_at_idx on announcements (created_at desc);
+
+alter table announcements enable row level security;
+-- Zero policies, on purpose, matching the teams tables: only the
+-- service-role key (which bypasses RLS) reads or writes this table. The
+-- portal reads announcements through the FastAPI backend, not directly via
+-- Supabase, so no anon SELECT policy is needed.
+
+-- Schedule (backend/schedule.py): the day-of agenda, editable by organizers
+-- when something runs long or moves. Same in-memory-on-serverless problem
+-- as announcements had, and the same fix. id stays a short text slug
+-- ("s-1", ...) rather than a uuid, matching the values repository.py used
+-- to hardcode, so this seed is a straightforward one-time copy of them.
+create table if not exists schedule_items (
+  id text primary key,
+  title text not null,
+  location text,
+  start_time timestamptz not null,
+  end_time timestamptz not null
+);
+
+alter table schedule_items enable row level security;
+-- Zero policies -- same posture as announcements/teams above.
+
+-- One-time seed of the real WolfHacks 2026 schedule (Oct 3-4, matching
+-- siteConfig.js's event.date/countdownTarget), in the event's local time
+-- (America/New_York, UTC-4 under DST, which is in effect those dates).
+-- `on conflict do nothing` makes this safe to re-run without clobbering any
+-- edits organizers have since made through the portal.
+insert into schedule_items (id, title, location, start_time, end_time) values
+  ('s-1', 'Check-In', null, '2026-10-03 09:00:00-04', '2026-10-03 10:00:00-04'),
+  ('s-2', 'Sponsorship Fair', null, '2026-10-03 09:00:00-04', '2026-10-03 10:00:00-04'),
+  ('s-3', 'Opening Ceremony', null, '2026-10-03 10:00:00-04', '2026-10-03 10:30:00-04'),
+  ('s-4', 'Team Formation', null, '2026-10-03 10:30:00-04', '2026-10-03 11:00:00-04'),
+  ('s-5', 'Competition Begins', null, '2026-10-03 11:00:00-04', '2026-10-03 11:15:00-04'),
+  ('s-6', 'Lunch', null, '2026-10-03 12:00:00-04', '2026-10-03 13:00:00-04'),
+  ('s-7', 'Mentor Check-In', null, '2026-10-03 14:00:00-04', '2026-10-03 15:30:00-04'),
+  ('s-8', 'Dinner', null, '2026-10-03 18:00:00-04', '2026-10-03 19:00:00-04'),
+  ('s-9', 'Breakfast', null, '2026-10-04 09:00:00-04', '2026-10-04 10:00:00-04'),
+  ('s-10', 'Project Submissions Due', null, '2026-10-04 11:00:00-04', '2026-10-04 11:15:00-04'),
+  ('s-11', 'Lunch', null, '2026-10-04 11:30:00-04', '2026-10-04 12:30:00-04'),
+  ('s-12', 'Judging', null, '2026-10-04 12:30:00-04', '2026-10-04 14:30:00-04'),
+  ('s-13', 'Closing Ceremony', null, '2026-10-04 15:00:00-04', '2026-10-04 15:30:00-04'),
+  ('s-14', 'Event Ends', null, '2026-10-04 16:00:00-04', '2026-10-04 16:15:00-04')
+on conflict (id) do nothing;

@@ -1,6 +1,6 @@
 """Schedule endpoints: the day-of agenda, readable by anyone (no login
 needed), adjustable by organizers when something runs long or moves.
-Persistence is in-memory, same pattern as teams.py/announcements.py.
+Persistence is Supabase-backed (see repository.py).
 
 "Current" / "next" are not computed here -- the client compares each
 item's start/end time against its own clock, the same way it would for

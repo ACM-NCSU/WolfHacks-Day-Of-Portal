@@ -2,25 +2,23 @@
 
 Team/invite state (this file's largest section) is Supabase Postgres-backed,
 per supabase_dev_bootstrap.sql -- teams.py never touches Supabase directly,
-it only calls into this module. Announcements and schedule are still
-in-memory (state resets on process restart, which matters since this backend
-deploys to Vercel as a serverless function); migrating them is a follow-up,
-not done here.
+it only calls into this module. Announcements and the schedule are now
+Supabase-backed too (see the `announcements`/`schedule_items` tables in
+supabase_schema.sql) -- both used to be plain in-memory Python lists, which
+silently lost or "flickered" data on Vercel because a serverless deploy can
+route requests to different processes, or cold-start a fresh one, with no
+shared memory between them.
 
-Participant identity is NOT mocked: `_participants` starts empty and is
-populated by `remember_participant` every time someone authenticates (see
-auth.get_current_participant), backed by the real `applications` table in
-Supabase via db.py. It exists only to resolve ids to display names for
-announcements (`serialize_announcement`'s author_name) -- team/invite reads
-hydrate participant data live from Supabase instead of this cache.
+Participant identity is NOT mocked: every participant-shaped value here is
+either the live `Participant` auth.get_current_participant resolved from the
+real `applications` table (via db.py), or hydrated fresh from Supabase per
+request (see `_hydrate_participants`) -- there is no participant cache.
 """
 
 import logging
 import uuid as uuid_lib
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from itertools import count
-from zoneinfo import ZoneInfo
 
 from postgrest.exceptions import APIError
 from supabase import Client
@@ -47,103 +45,13 @@ class Participant:
     role: str = "hacker"
 
 
-@dataclass
-class Announcement:
-    id: str
-    message: str
-    author_id: str
-    created_at: datetime
-
-
-@dataclass
-class ScheduleItem:
-    id: str
-    title: str
-    location: str | None
-    start_time: datetime
-    end_time: datetime
-
-
-_EVENT_TZ = ZoneInfo("America/New_York")
-
-
-def _seed_schedule() -> list[ScheduleItem]:
-    # The real WolfHacks 2026 schedule (Oct 3-4, matching siteConfig's
-    # event.date/countdownTarget), in the event's local timezone so
-    # "current"/"next" line up correctly no matter where a viewer is.
-    def day1(hour: int, minute: int = 0) -> datetime:
-        return datetime(2026, 10, 3, hour, minute, tzinfo=_EVENT_TZ)
-
-    def day2(hour: int, minute: int = 0) -> datetime:
-        return datetime(2026, 10, 4, hour, minute, tzinfo=_EVENT_TZ)
-
-    return [
-        ScheduleItem("s-1", "Check-In", None, day1(9, 0), day1(10, 0)),
-        ScheduleItem("s-2", "Sponsorship Fair", None, day1(9, 0), day1(10, 0)),
-        ScheduleItem("s-3", "Opening Ceremony", None, day1(10, 0), day1(10, 30)),
-        ScheduleItem("s-4", "Team Formation", None, day1(10, 30), day1(11, 0)),
-        ScheduleItem("s-5", "Competition Begins", None, day1(11, 0), day1(11, 15)),
-        ScheduleItem("s-6", "Lunch", None, day1(12, 0), day1(13, 0)),
-        ScheduleItem("s-7", "Mentor Check-In", None, day1(14, 0), day1(15, 30)),
-        ScheduleItem("s-8", "Dinner", None, day1(18, 0), day1(19, 0)),
-        ScheduleItem("s-9", "Breakfast", None, day2(9, 0), day2(10, 0)),
-        ScheduleItem("s-10", "Project Submissions Due", None, day2(11, 0), day2(11, 15)),
-        ScheduleItem("s-11", "Lunch", None, day2(11, 30), day2(12, 30)),
-        ScheduleItem("s-12", "Judging", None, day2(12, 30), day2(14, 30)),
-        ScheduleItem("s-13", "Closing Ceremony", None, day2(15, 0), day2(15, 30)),
-        ScheduleItem("s-14", "Event Ends", None, day2(16, 0), day2(16, 15)),
-    ]
-
-
-_participants: list[Participant] = []
-_announcements: list[Announcement] = []
-_schedule: list[ScheduleItem] = _seed_schedule()
-
-_announcement_id_seq = count(1)
-
-
-def _find_participant(participant_id: str) -> Participant | None:
-    return next((p for p in _participants if p.id == participant_id), None)
-
-
-def serialize_participant(p: Participant) -> dict:
-    return {
-        "id": p.id,
-        "email": p.email,
-        "full_name": p.full_name,
-        "checked_in": p.checked_in,
-        "is_organizer": p.is_organizer,
-    }
-
-
-# --- Participant identity (backed by the real `applications` table) ---
-
-def remember_participant(p: Participant) -> None:
-    """Upsert a participant into the in-memory registry. Called on every
-    successful auth.get_current_participant lookup, so anyone who has
-    logged in at least once is resolvable by id for announcement display."""
-    existing = _find_participant(p.id)
-    if existing is not None:
-        existing.email = p.email
-        existing.full_name = p.full_name
-        existing.checked_in = p.checked_in
-        existing.is_organizer = p.is_organizer
-        existing.role = p.role
-    else:
-        _participants.append(p)
-
-
-def get_participant(participant_id: str) -> Participant | None:
-    return _find_participant(participant_id)
-
-
 # --- Supabase client + error translation (teams/invites) ---
 
 
 def _client() -> Client:
     client = get_supabase_client()
     if client is None:
-        raise RepositoryError("Team features are temporarily unavailable.")
+        raise RepositoryError("This feature is temporarily unavailable.")
     return client
 
 
@@ -552,57 +460,90 @@ def decline_invite(invite_id: str, participant_id: str) -> None:
 
 
 # --- Announcements ---
+#
+# Supabase-backed (see the `announcements` table in supabase_schema.sql).
+# author_name is stored on the row at creation time rather than joined from
+# `applications`/`participant_directory` at read time -- it's a handful of
+# bytes duplicated per announcement, but it means a display name survives
+# even if the poster's application record is later deleted, and it avoids
+# another round trip (or the in-memory _find_participant cache this replaced,
+# which had the exact same cross-instance staleness this table fixes) just
+# to label who posted.
 
-def serialize_announcement(a: Announcement) -> dict:
-    author = _find_participant(a.author_id)
+def serialize_announcement(row: dict) -> dict:
     return {
-        "id": a.id,
-        "message": a.message,
-        "author_name": author.full_name if author else "An organizer",
-        "created_at": a.created_at.isoformat(),
+        "id": row["id"],
+        "message": row["message"],
+        "author_name": row["author_name"],
+        "created_at": row["created_at"],
     }
 
 
 def list_announcements(limit: int = 50) -> list[dict]:
-    newest_first = sorted(_announcements, key=lambda a: a.created_at, reverse=True)
-    return [serialize_announcement(a) for a in newest_first[:limit]]
+    client = _client()
+    result = (
+        client.table("announcements")
+        .select("id, message, author_name, created_at")
+        .order("created_at", desc=True)
+        .limit(limit)
+        .execute()
+    )
+    return [serialize_announcement(row) for row in result.data]
 
 
-def create_announcement(author_id: str, message: str) -> dict:
+def create_announcement(author_id: str, author_name: str, message: str) -> dict:
     trimmed = message.strip()
     if not trimmed:
         raise RepositoryError("Announcement message is required.")
     if len(trimmed) > MAX_ANNOUNCEMENT_LENGTH:
         raise RepositoryError(f"Announcement is too long (max {MAX_ANNOUNCEMENT_LENGTH} characters).")
-    announcement = Announcement(
-        f"an-{next(_announcement_id_seq)}",
-        trimmed,
-        author_id,
-        datetime.now(timezone.utc),
-    )
-    _announcements.append(announcement)
-    return serialize_announcement(announcement)
+    client = _client()
+    try:
+        result = (
+            client.table("announcements")
+            .insert({"message": trimmed, "author_id": author_id, "author_name": author_name})
+            .execute()
+        )
+    except APIError as err:
+        raise _translate(err) from err
+    return serialize_announcement(result.data[0])
 
 
 # --- Schedule ---
+#
+# Supabase-backed (see the `schedule_items` table in supabase_schema.sql),
+# seeded there with the real WolfHacks 2026 agenda -- this module no longer
+# owns that data, it just reads/writes the table.
 
-def _find_schedule_item(item_id: str) -> ScheduleItem | None:
-    return next((i for i in _schedule if i.id == item_id), None)
+def _parse_timestamptz(value: str) -> datetime:
+    # PostgREST returns timestamptz as ISO 8601 with a numeric offset (or
+    # trailing "Z", depending on version) -- normalize "Z" first so this
+    # doesn't depend on which Python version (3.10 vs 3.11+ changed
+    # fromisoformat's "Z" handling) the deploy happens to run.
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
-def serialize_schedule_item(i: ScheduleItem) -> dict:
+def _get_schedule_item(client: Client, item_id: str) -> dict:
+    result = client.table("schedule_items").select("*").eq("id", item_id).execute()
+    if not result.data:
+        raise RepositoryError("Schedule item not found.")
+    return result.data[0]
+
+
+def serialize_schedule_item(row: dict) -> dict:
     return {
-        "id": i.id,
-        "title": i.title,
-        "location": i.location,
-        "start_time": i.start_time.isoformat(),
-        "end_time": i.end_time.isoformat(),
+        "id": row["id"],
+        "title": row["title"],
+        "location": row["location"],
+        "start_time": row["start_time"],
+        "end_time": row["end_time"],
     }
 
 
 def list_schedule() -> list[dict]:
-    ordered = sorted(_schedule, key=lambda i: i.start_time)
-    return [serialize_schedule_item(i) for i in ordered]
+    client = _client()
+    result = client.table("schedule_items").select("*").order("start_time").execute()
+    return [serialize_schedule_item(row) for row in result.data]
 
 
 def update_schedule_item(
@@ -613,22 +554,25 @@ def update_schedule_item(
     start_time: datetime | None = None,
     end_time: datetime | None = None,
 ) -> dict:
-    item = _find_schedule_item(item_id)
-    if item is None:
-        raise RepositoryError("Schedule item not found.")
+    client = _client()
+    current = _get_schedule_item(client, item_id)
 
-    new_start = start_time if start_time is not None else item.start_time
-    new_end = end_time if end_time is not None else item.end_time
+    new_start = start_time if start_time is not None else _parse_timestamptz(current["start_time"])
+    new_end = end_time if end_time is not None else _parse_timestamptz(current["end_time"])
     if new_end <= new_start:
         raise RepositoryError("End time must be after start time.")
 
+    updates = {"start_time": new_start.isoformat(), "end_time": new_end.isoformat()}
     if title is not None:
         trimmed = title.strip()
         if not trimmed:
             raise RepositoryError("Title is required.")
-        item.title = trimmed
+        updates["title"] = trimmed
     if location is not None:
-        item.location = location.strip() or None
-    item.start_time = new_start
-    item.end_time = new_end
-    return serialize_schedule_item(item)
+        updates["location"] = location.strip() or None
+
+    try:
+        result = client.table("schedule_items").update(updates).eq("id", item_id).execute()
+    except APIError as err:
+        raise _translate(err) from err
+    return serialize_schedule_item(result.data[0])

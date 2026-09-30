@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, Field
 
 from db import get_supabase_client, SUPABASE_APPLICATIONS_TABLE
-from repository import Participant, remember_participant
+from repository import Participant
 
 logger = logging.getLogger("wolfhacks")
 
@@ -203,7 +203,6 @@ def get_current_participant(authorization: str | None = Header(default=None)) ->
         is_organizer=is_organizer,
         role=role,
     )
-    remember_participant(participant)
     return participant
 
 

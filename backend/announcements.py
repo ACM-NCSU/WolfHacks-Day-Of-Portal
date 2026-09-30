@@ -3,7 +3,7 @@
 Posting also forwards the announcement to a Discord channel via an
 incoming webhook (WOLFHACKS_DISCORD_WEBHOOK_URL) when one is configured --
 same "skip entirely if unset, no request ever made" shape as main.py's
-Axiom handler. Persistence is in-memory for now, same as teams.py.
+Axiom handler. Persistence is Supabase-backed (see repository.py).
 """
 
 import json
@@ -35,7 +35,13 @@ def _notify_discord(announcement: dict) -> None:
         logger.info("Skipping Discord notification: WOLFHACKS_DISCORD_WEBHOOK_URL not configured")
         return
 
-    payload = {"content": f"\U0001F4E3 **{announcement['author_name']}**: {announcement['message']}"}
+    payload = {
+        "content": f"\U0001F4E3 **{announcement['author_name']}**: {announcement['message']}",
+        # message is organizer-authored free text forwarded verbatim -- without
+        # this, an announcement that happens to contain "@everyone", "@here",
+        # or a role mention would actually ping the whole server when relayed.
+        "allowed_mentions": {"parse": []},
+    }
     request = urllib.request.Request(
         DISCORD_WEBHOOK_URL,
         data=json.dumps(payload).encode("utf-8"),
@@ -69,7 +75,7 @@ def create_announcement(
 ):
     _require_organizer(participant)
     try:
-        announcement = repository.create_announcement(participant.id, body.message)
+        announcement = repository.create_announcement(participant.id, participant.full_name, body.message)
     except repository.RepositoryError as err:
         raise HTTPException(status_code=400, detail=str(err))
     _notify_discord(announcement)
