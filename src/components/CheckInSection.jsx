@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch, ApiError } from '../lib/api.js';
 
+const STATS_POLL_MS = 15_000;
+
 // Rendered inside PortalShell's 'checkin' section -- PortalShell already
 // guarantees an authenticated `participant` before this ever mounts, so this
 // only needs to gate on role, not session (compare AnnouncementsPage).
@@ -21,7 +23,12 @@ export default function CheckInSection({ participant }) {
   }, []);
 
   useEffect(() => {
-    if (participant.is_organizer) refreshStats();
+    if (!participant.is_organizer) return undefined;
+    refreshStats();
+    // Poll so the count reflects check-ins from every station, not just
+    // the ones made on this device.
+    const interval = setInterval(refreshStats, STATS_POLL_MS);
+    return () => clearInterval(interval);
   }, [participant.is_organizer, refreshStats]);
 
   async function handleSearch(event) {
@@ -44,6 +51,7 @@ export default function CheckInSection({ participant }) {
 
   async function handleCheckIn(id) {
     setCheckingInId(id);
+    setErrorMessage('');
     try {
       const updated = await apiFetch(`/api/checkin/${id}`, { method: 'POST' });
       setResults((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
