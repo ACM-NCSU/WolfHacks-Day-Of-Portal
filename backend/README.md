@@ -161,9 +161,11 @@ instead of triggering a second full refetch — see `useTeamState.js`'s
 identity-guarded so a mutation response can't reopen the same cross-session
 staleness bug through a different path.
 
-Endpoints: `GET /api/team/me`, `GET /api/participants/search?q=`,
+Endpoints: `GET /api/team/me`,
 `POST /api/teams`, `PATCH /api/teams/{id}`,
-`DELETE /api/teams/{id}/members/me`, `POST /api/teams/{id}/invites`,
+`DELETE /api/teams/{id}/members/me`, `POST /api/teams/{id}/invites`
+(body `{"email": ...}` -- exact match against a checked-in hacker; there is
+deliberately no participant search, so emails can't be browsed),
 `DELETE /api/teams/{id}/invites/{invite_id}`, `POST /api/invites/{id}/accept`,
 `POST /api/invites/{id}/decline` — all authenticated the same way as the
 rest of the portal.

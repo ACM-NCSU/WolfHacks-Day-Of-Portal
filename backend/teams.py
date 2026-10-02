@@ -16,10 +16,16 @@ logger = logging.getLogger("wolfhacks")
 
 router = APIRouter(prefix="/api", tags=["teams"])
 
-# Mirrors src/data/siteConfig.js `event.tracks` / `event.challenges`. Both
-# lists are still placeholder content; when the real list lands, update both
-# places together.
-TRACK_SLUGS = {"open", "ai-ml", "sustainability"}
+# Must mirror the slugs in src/data/siteConfig.js `event.tracks` /
+# `event.challenges` exactly -- the team picker sends those slugs, and any
+# slug missing here is rejected with a 422. Update both places together.
+TRACK_SLUGS = {
+    "geospatial-analytics",
+    "applied-ai-software",
+    "applied-ai-hardware",
+    "applied-ai-challenge",
+    "advanced-analytics",
+}
 CHALLENGE_SLUGS = {"best-design", "best-sponsor-api", "best-first-hack"}
 
 
@@ -75,7 +81,7 @@ class UpdateTeamRequest(BaseModel):
 
 
 class InviteRequest(BaseModel):
-    participant_id: str
+    email: str = Field(min_length=3, max_length=254)
 
 
 # --- Reads ---
@@ -88,11 +94,6 @@ def get_my_team(participant: repository.Participant = Depends(get_current_partic
         "incoming_invites": state["incoming_invites"],
         "outgoing_invites": state["outgoing_invites"],
     }
-
-
-@router.get("/participants/search")
-def search_participants(q: str = "", participant: repository.Participant = Depends(get_current_participant)):
-    return {"results": repository.search_participants(q, participant.id)}
 
 
 # --- Team lifecycle ---
@@ -133,9 +134,13 @@ def leave_team(team_id: str, participant: repository.Participant = Depends(get_c
 def create_invite(team_id: str, body: InviteRequest, participant: repository.Participant = Depends(get_current_participant)):
     _require_leader_of(team_id, participant)
     try:
-        invite = repository.invite_participant(team_id, body.participant_id, participant.id)
+        invitee_id = repository.find_invitee_by_email(body.email, participant.id)
     except repository.RepositoryError as err:
-        return _raise_for(err, status_code=409)
+        _raise_for(err, status_code=404)
+    try:
+        invite = repository.invite_participant(team_id, invitee_id, participant.id)
+    except repository.RepositoryError as err:
+        _raise_for(err, status_code=409)
     _notify_invite(invite)
     return invite
 

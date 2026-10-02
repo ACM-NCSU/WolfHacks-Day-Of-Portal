@@ -1736,8 +1736,6 @@ button.team-chip--selected:hover { color: var(--cream); }
 .team-invite__meta { color: var(--steel-dark); font-family: var(--font-mono); font-size: 13px; }
 .team-invite__actions { display: flex; gap: 8px; flex-shrink: 0; }
 
-.team-invite-result { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.team-invite-result__email { margin-left: 6px; color: var(--steel-dark); font-family: var(--font-mono); font-size: 12px; }
 
 @media (max-width: 640px) {
   .team-card { padding: 20px; }

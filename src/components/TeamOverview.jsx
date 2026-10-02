@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import TrackChallengePicker from './TrackChallengePicker.jsx';
-import InviteSearch from './InviteSearch.jsx';
+import InviteByEmail from './InviteByEmail.jsx';
 import PendingInvites from './PendingInvites.jsx';
 import siteConfig from '../data/siteConfig.js';
 import { leaveTeam } from '../lib/teamApi.js';
@@ -94,7 +94,7 @@ export default function TeamOverview({ team, participant, outgoingInvites, onTea
       {isLeader && (
         <>
           <TrackChallengePicker team={team} onTeamUpdate={onTeamUpdate} />
-          <InviteSearch team={team} outgoingInvites={outgoingInvites} setOutgoingInvites={setOutgoingInvites} />
+          <InviteByEmail team={team} outgoingInvites={outgoingInvites} setOutgoingInvites={setOutgoingInvites} />
           <PendingInvites mode="outgoing" invites={outgoingInvites} setInvites={setOutgoingInvites} />
         </>
       )}

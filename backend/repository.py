@@ -23,7 +23,7 @@ from datetime import datetime, timezone
 from postgrest.exceptions import APIError
 from supabase import Client
 
-from db import escape_ilike, get_supabase_client
+from db import get_supabase_client
 
 logger = logging.getLogger("wolfhacks")
 
@@ -101,10 +101,6 @@ def _parse_uuid(value: str) -> str | None:
         return str(uuid_lib.UUID(value))
     except (ValueError, AttributeError, TypeError):
         return None
-
-
-def _ilike_pattern(term: str) -> str:
-    return f"%{escape_ilike(term)}%"
 
 
 # --- Internal helpers: hydrating raw rows into the serialized shapes ---
@@ -286,26 +282,36 @@ def get_my_state(participant_id: str) -> dict:
     }
 
 
-def search_participants(query: str, exclude_participant_id: str) -> list[dict]:
-    q = query.strip()
-    if not q:
-        return []
+def find_invitee_by_email(email: str, inviter_id: str) -> str:
+    # Exact match only -- there is deliberately no browse/search, so a hacker
+    # can't list everyone's email; they have to already know their teammate's.
+    # Some applicants have duplicate rows, so prefer the checked-in one.
+    normalized = email.strip().lower()
+    if not normalized:
+        raise RepositoryError("Enter your teammate's email address.")
     client = _client()
     try:
         rows = (
-            client.rpc(
-                "search_available_participants",
-                {"p_pattern": _ilike_pattern(q), "p_exclude": exclude_participant_id},
-            )
+            client.table("participant_directory")
+            .select("id, checked_in, role")
+            .eq("email_lower", normalized)
             .execute()
             .data
         )
     except APIError as err:
         raise _translate(err) from err
-    return [
-        {"id": r["id"], "email": r["email"], "full_name": r["full_name"], "checked_in": r["checked_in"]}
-        for r in rows
-    ]
+
+    hackers = [r for r in rows if r["role"] == "hacker"]
+    if not hackers:
+        raise RepositoryError("No WolfHacks hacker found with that email.")
+    if any(r["id"] == inviter_id for r in hackers):
+        raise RepositoryError("You can't invite yourself.")
+    checked_in = [r for r in hackers if r["checked_in"]]
+    if not checked_in:
+        raise RepositoryError(
+            "That hacker hasn't checked in yet. You can invite them once they check in at the event."
+        )
+    return checked_in[0]["id"]
 
 
 # --- Team lifecycle ---

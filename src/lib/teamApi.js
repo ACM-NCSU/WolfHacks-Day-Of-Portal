@@ -10,12 +10,6 @@ export async function getMyState() {
   };
 }
 
-export async function searchParticipants(query) {
-  if (!query.trim()) return [];
-  const json = await apiFetch(`/api/participants/search?q=${encodeURIComponent(query)}`);
-  return json.results;
-}
-
 export function createTeam(name) {
   return apiFetch('/api/teams', { method: 'POST', body: { name } });
 }
@@ -28,8 +22,8 @@ export function leaveTeam(teamId) {
   return apiFetch(`/api/teams/${teamId}/members/me`, { method: 'DELETE' });
 }
 
-export function inviteParticipant(teamId, participantId) {
-  return apiFetch(`/api/teams/${teamId}/invites`, { method: 'POST', body: { participant_id: participantId } });
+export function inviteByEmail(teamId, email) {
+  return apiFetch(`/api/teams/${teamId}/invites`, { method: 'POST', body: { email } });
 }
 
 export function cancelInvite(teamId, inviteId) {
