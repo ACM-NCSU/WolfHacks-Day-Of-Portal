@@ -35,6 +35,10 @@ export default function TeamDashboard({ participant }) {
       <div className="portal-shell__intro">
         <p className="eyebrow">TEAM</p>
         <h1 className="section__heading">{team ? team.name : "You're not on a team yet."}</h1>
+        <p className="section__lede">
+          Teams need 2-4 members and exactly one track. Finalize both by 11:59 PM Saturday --
+          here and on DevPost.
+        </p>
       </div>
 
       {!hasLoadedOnce ? (
@@ -57,7 +61,7 @@ export default function TeamDashboard({ participant }) {
           />
           <TeamCreateCard onCreated={setTeam} />
           <p className="section__lede">
-            A team leader can also add you by searching your name or email.
+            Or have your team leader invite you using the email you applied with.
           </p>
         </>
       )}

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import siteConfig from '../data/siteConfig.js';
 
 const { tracks, challenges, judging } = siteConfig.event;
+const PLACES = ['1st', '2nd', '3rd'];
 
 function AccordionItem({ title, children }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -57,8 +58,8 @@ export default function TracksPage() {
         <p className="eyebrow">TRACKS</p>
         <h1 className="section__heading">Pick a track, build something real.</h1>
         <p className="section__lede">
-          Aim your project at one of these sponsor tracks. Set (or change) your team's track from
-          the Team tab.
+          Every team competes in one, and only one, of these sponsor tracks. Set (or change) your
+          team's track from the Team tab -- it must be finalized by 11:59 PM Saturday.
         </p>
       </div>
 
@@ -66,6 +67,9 @@ export default function TracksPage() {
         {tracks.map((track) => (
           <AccordionItem key={track.slug} title={track.name}>
             <p>{track.description}</p>
+            {track.problemStatement && (
+              <p><strong>Problem statement:</strong> {track.problemStatement}</p>
+            )}
 
             {track.ideas && (
               <ul className="tracks-page__list">
@@ -75,18 +79,39 @@ export default function TracksPage() {
               </ul>
             )}
 
+            {track.paragraphs?.map((text) => <p key={text}>{text}</p>)}
+
             {track.technologies && (
-              <div className="team-chip-group team-chip-group--tags">
-                {track.technologies.map((tech) => (
-                  <span className="team-chip" key={tech}>{tech}</span>
-                ))}
-              </div>
+              <>
+                <p><strong>{track.technologiesLabel ?? 'Technologies'}:</strong></p>
+                <div className="team-chip-group team-chip-group--tags">
+                  {track.technologies.map((tech) => (
+                    <span className="team-chip" key={tech}>{tech}</span>
+                  ))}
+                </div>
+              </>
             )}
 
-            {track.datasets && <p><strong>Datasets:</strong> {track.datasets}</p>}
-            {track.coreChallenge && <p><strong>Core challenge:</strong> {track.coreChallenge}</p>}
+            {track.datasets && <p><strong>Datasets &amp; APIs:</strong> {track.datasets}</p>}
+
             {track.dataScienceComponent && (
-              <p><strong>Data science component:</strong> {track.dataScienceComponent}</p>
+              <>
+                <p><strong>Data science component:</strong> {track.dataScienceComponent[0]}</p>
+                {track.dataScienceComponent.slice(1).map((text) => <p key={text}>{text}</p>)}
+              </>
+            )}
+
+            {track.goal && <p>{track.goal}</p>}
+
+            {track.prizes && (
+              <>
+                <p><strong>Track prizes:</strong></p>
+                <ul className="tracks-page__list">
+                  {track.prizes.map((prize, i) => (
+                    <li key={prize}>{PLACES[i]}: {prize}</li>
+                  ))}
+                </ul>
+              </>
             )}
           </AccordionItem>
         ))}

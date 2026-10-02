@@ -2,7 +2,6 @@ import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router
 import Starfield from './Starfield.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
 import WolfMark from './WolfMark.jsx';
-import Countdown from './Countdown.jsx';
 import SchedulePage from './SchedulePage.jsx';
 import AnnouncementsPage from './AnnouncementsPage.jsx';
 import AnnouncementBanner from './AnnouncementBanner.jsx';
@@ -13,7 +12,7 @@ import TracksPage from './TracksPage.jsx';
 import usePortalSession from '../hooks/usePortalSession.js';
 import useAnnouncements from '../hooks/useAnnouncements.js';
 import PORTAL_SECTIONS from '../data/portalSections.js';
-import siteConfig from '../data/siteConfig.js';
+import PortalOverview from './PortalOverview.jsx';
 
 // Sections with a real page swap in here; anything absent still falls back
 // to the "Coming soon" placeholder below.
@@ -26,11 +25,13 @@ const SECTION_COMPONENTS = {
   checkin: CheckInSection,
 };
 
+export { PortalOverview };
+
 // The day-of portal's overall shell: nav across the top, an <Outlet/> below
 // for whichever section is active. This is a layout route (see App.jsx) --
 // PortalShell itself, and the usePortalSession() session it holds, stays
 // mounted while navigating between sections; only the Outlet content
-// (PortalOverview / PortalSection below) swaps. That's what keeps the
+// (PortalOverview / PortalSection) swaps. That's what keeps the
 // Supabase session check from re-running on every nav click.
 export default function PortalShell() {
   const { participant, status: sessionStatus, logout } = usePortalSession();
@@ -105,59 +106,6 @@ export default function PortalShell() {
         </div>
       </main>
     </>
-  );
-}
-
-export function PortalOverview() {
-  const { event } = siteConfig;
-
-  return (
-    <section>
-      <div className="portal-shell__intro">
-        <p className="eyebrow">TIME LEFT IN THE HACKATHON</p>
-        <h1 className="section__heading">Keep building.</h1>
-        <Countdown target={event.hackathonEndTarget} />
-        <p className="portal-shell__placeholder-note" style={{ marginTop: 12 }}>
-          Counts down to the Day 2 project submissions deadline -- see the Schedule tab for the
-          full agenda.
-        </p>
-      </div>
-
-      <div className="portal-shell__intro">
-        <p className="eyebrow">GENERAL INFO</p>
-        <h2 className="section__heading">About WolfHacks</h2>
-        <p className="section__lede">
-          {event.hero.subhead}
-        </p>
-      </div>
-
-      <div className="team-card">
-        <p className="team-card__title">Venue &amp; parking</p>
-        <p className="team-card__note">
-          {event.location}, inside the James B. Hunt Jr. Library on NC State's Centennial Campus.
-          Parking is free on Centennial Campus from 5 PM Friday to 7 AM Monday.
-        </p>
-      </div>
-
-      <div className="team-card">
-        <p className="team-card__title">Need help?</p>
-        <p className="team-card__note">
-          Look for staff wearing organizer badges, ask in the event Discord, or email{' '}
-          <a href="mailto:acmchapter-org@ncsu.edu">acmchapter-org@ncsu.edu</a>.
-        </p>
-      </div>
-
-      <div className="team-card">
-        <p className="team-card__title">Code of conduct</p>
-        <p className="team-card__note">
-          WolfHacks follows the{' '}
-          <a href={event.codeOfConduct} target="_blank" rel="noreferrer">
-            MLH Code of Conduct
-          </a>
-          . Report any concerns to a staff member immediately.
-        </p>
-      </div>
-    </section>
   );
 }
 
