@@ -56,7 +56,7 @@ export default function PortalShell() {
   return (
     <>
       <Starfield />
-      <AnnouncementBanner announcements={announcements} />
+      <AnnouncementBanner key={participant.id} announcements={announcements} participantId={participant.id} />
       <ThemeToggle />
       <main className="portal-shell">
         <div className="container portal-shell__container">
