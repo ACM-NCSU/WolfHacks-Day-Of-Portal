@@ -7,6 +7,7 @@ export default function PortalLogin() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showOrganizerLogin, setShowOrganizerLogin] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -66,7 +67,6 @@ export default function PortalLogin() {
                         </div>
                     )}
 
-                    <p className="portal-login__hint">Hackers &amp; participants, sign in here with Discord.</p>
                     <button
                         className="btn portal-login__discord"
                         type="button"
@@ -76,42 +76,55 @@ export default function PortalLogin() {
                         Continue with Discord
                     </button>
 
-                    <div className="portal-login__divider">
-                        <span>Organizers only</span>
-                    </div>
-                    <p className="portal-login__hint">
-                        This email/password form is for organizer accounts. If you're a hacker, use Discord above.
-                    </p>
-
-                    <form className="portal-login__form" onSubmit={handleLogin}>
-                        <label>
-                            Email
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                        </label>
-
-                        <label>
-                            Password
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                        </label>
-
+                    {!showOrganizerLogin ? (
                         <button
-                            className="btn btn--primary"
-                            type="submit"
-                            disabled={loading}
+                            type="button"
+                            className="portal-login__organizer-toggle"
+                            onClick={() => setShowOrganizerLogin(true)}
                         >
-                            {loading ? 'Signing in...' : 'Sign in'}
+                            Organizer? Sign in with email
                         </button>
-                    </form>
+                    ) : (
+                        <>
+                            <div className="portal-login__divider">
+                                <span>Organizers only</span>
+                            </div>
+                            <p className="portal-login__hint">
+                                Hackers, use Discord above. This form is only for organizer accounts.
+                            </p>
+
+                            <form className="portal-login__form" onSubmit={handleLogin}>
+                                <label>
+                                    Email
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        autoFocus
+                                        required
+                                    />
+                                </label>
+
+                                <label>
+                                    Password
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                    />
+                                </label>
+
+                                <button
+                                    className="btn btn--primary"
+                                    type="submit"
+                                    disabled={loading}
+                                >
+                                    {loading ? 'Signing in...' : 'Sign in'}
+                                </button>
+                            </form>
+                        </>
+                    )}
                 </div>
             </div>
         </main>

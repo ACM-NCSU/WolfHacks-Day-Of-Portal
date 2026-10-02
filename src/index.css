@@ -1068,6 +1068,25 @@ a.acm-mention:hover { text-decoration: underline; }
   line-height: 1.4;
 }
 
+.portal-login__organizer-toggle {
+  display: block;
+  margin: 20px auto 0;
+  padding: 4px;
+  background: none;
+  border: none;
+  color: var(--steel-dark);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.portal-login__organizer-toggle:hover,
+.portal-login__organizer-toggle:focus-visible {
+  color: var(--red);
+}
+
 .portal-login__error {
   margin: 0;
   color: #ff8b8b;
@@ -1568,6 +1587,25 @@ a.acm-mention:hover { text-decoration: underline; }
   font-family: var(--font-body);
   font-size: 13px;
   line-height: 1.4;
+}
+
+.portal-login__organizer-toggle {
+  display: block;
+  margin: 20px auto 0;
+  padding: 4px;
+  background: none;
+  border: none;
+  color: var(--steel-dark);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.portal-login__organizer-toggle:hover,
+.portal-login__organizer-toggle:focus-visible {
+  color: var(--red);
 }
 
 .portal-login__error {
