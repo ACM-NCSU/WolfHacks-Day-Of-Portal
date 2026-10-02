@@ -1,8 +1,8 @@
 """Persistence for teams, announcements, schedule, and participant identity.
 
 Team/invite state (this file's largest section) is Supabase Postgres-backed,
-per supabase_dev_bootstrap.sql -- teams.py never touches Supabase directly,
-it only calls into this module. Announcements and the schedule are now
+per supabase_schema.sql -- teams.py never touches Supabase directly, it only
+calls into this module. Announcements and the schedule are now
 Supabase-backed too (see the `announcements`/`schedule_items` tables in
 supabase_schema.sql) -- both used to be plain in-memory Python lists, which
 silently lost or "flickered" data on Vercel because a serverless deploy can
@@ -65,7 +65,7 @@ _CONSTRAINT_MESSAGES = {
     "team_invites_one_pending": "That person already has a pending invite from this team.",
 }
 
-# Application-raised errors (Postgres code P0001, from supabase_dev_bootstrap.sql's
+# Application-raised errors (Postgres code P0001, from supabase_schema.sql's
 # plpgsql functions) -> the exact message, keyed by the raise message text.
 _RAISED_MESSAGES = {
     "team_full": "Team is already full (max 4 members).",

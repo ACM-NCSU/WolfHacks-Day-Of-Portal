@@ -4,13 +4,19 @@ Branch: `feature/team-dashboard` ([PR #8](https://github.com/ACM-NCSU/WolfHacks-
 
 ## Setup
 
-This now runs against a real Postgres database, in a **separate dev Supabase
-project** — never the shared production one (see plan.md, Phase 4 decisions).
+This now runs against a real Postgres database. The team tables
+(`teams`/`team_members`/`team_invites`, the `participant_directory` view, and
+the `accept_team_invite`/`leave_team_tx`/`search_available_participants`
+functions) used to live only in `backend/supabase_dev_bootstrap.sql`, marked
+dev-only and never applied to the shared production project -- which is why
+`GET /api/team/me` 500'd there. That schema is now folded into
+`backend/supabase_schema.sql` (the real source of truth); the dev bootstrap
+script is retired.
 
-1. Create a dev Supabase project (or reuse one you already made for this).
+1. Create a dev Supabase project (or reuse one you already made for this),
+   or use the shared project if you have access.
 2. In its SQL editor, run `backend/supabase_schema.sql`, then
-   `backend/supabase_dev_bootstrap.sql`, then `backend/seed_dev_data.sql`, in
-   that order.
+   `backend/seed_dev_data.sql`.
 3. Fill in `backend/.env` with that project's `SUPABASE_URL` and
    `SUPABASE_SERVICE_ROLE_KEY` (Project Settings → API).
 

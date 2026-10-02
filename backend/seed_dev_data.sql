@@ -1,10 +1,9 @@
 -- Team dashboard (issue #4), Phase 4 -- dev seed data.
 --
--- Run this against the SAME dev Supabase project as
--- backend/supabase_dev_bootstrap.sql, after that file. Mirrors the six
--- accounts from the old in-memory backend/repository.py so the manual
--- walkthrough in docs/testing-team-dashboard.md still works unchanged,
--- except ids are now real uuids instead of "p-sam" style strings.
+-- Run this after backend/supabase_schema.sql, against the same project.
+-- Mirrors the six accounts from the old in-memory backend/repository.py so
+-- the manual walkthrough in docs/testing-team-dashboard.md still works
+-- unchanged, except ids are now real uuids instead of "p-sam" style strings.
 --
 -- Re-runnable: re-running this script resets team/invite state back to the
 -- seed and re-creates the six accounts.

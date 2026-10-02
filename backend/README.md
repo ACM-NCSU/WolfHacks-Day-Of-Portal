@@ -128,12 +128,11 @@ table (the columns `checked_in`, `user_id`, `discord_id`, `role` come from
 the check-in and login features; this module reads them and never writes
 them). There is no separate `participants` table.
 
-Team tables (`teams`, `team_members`, `team_invites`) and the
-`participant_directory` view live in `backend/supabase_dev_bootstrap.sql`.
-Run `supabase_schema.sql` then `supabase_dev_bootstrap.sql` then
-`seed_dev_data.sql` in a **dev** Supabase project's SQL editor — never the
-shared production one — then set `SUPABASE_URL` /
-`SUPABASE_SERVICE_ROLE_KEY` in `.env` to that dev project. See
+Team tables (`teams`, `team_members`, `team_invites`), the
+`participant_directory` view, and the `accept_team_invite` /
+`leave_team_tx` / `search_available_participants` functions live in
+`backend/supabase_schema.sql` alongside everything else — run that file in
+the Supabase SQL editor, then `seed_dev_data.sql` for local test data. See
 `docs/testing-team-dashboard.md` for the full walkthrough.
 
 Seeded accounts (`backend/seed_dev_data.sql`): `jordan@ncsu.edu` leads
