@@ -985,14 +985,14 @@ a.acm-mention:hover { text-decoration: underline; }
 
 .portal-login .container {
   width: 100%;
-  max-width: 480px;
+  max-width: 540px;
   padding: 0;
 }
 
 .portal-login__card {
   background: var(--card);
   border: 1px solid var(--line);
-  padding: 36px 32px;
+  padding: 44px 40px;
 }
 
 .portal-login__form {
@@ -1049,15 +1049,16 @@ a.acm-mention:hover { text-decoration: underline; }
 }
 
 .portal-login__discord {
-  background: var(--ink-raised);
-  border: 1px solid var(--line);
-  color: var(--paper);
+  background: var(--red);
+  border: 1px solid var(--red);
+  color: var(--cream);
   justify-content: center;
   width: 100%;
+  margin-top: 24px;
 }
 
 .portal-login__discord:hover {
-  border-color: var(--red);
+  filter: brightness(1.1);
 }
 
 .portal-login__hint {
@@ -1506,14 +1507,14 @@ a.acm-mention:hover { text-decoration: underline; }
 
 .portal-login .container {
   width: 100%;
-  max-width: 480px;
+  max-width: 540px;
   padding: 0;
 }
 
 .portal-login__card {
   background: var(--card);
   border: 1px solid var(--line);
-  padding: 36px 32px;
+  padding: 44px 40px;
 }
 
 .portal-login__form {
@@ -1570,15 +1571,16 @@ a.acm-mention:hover { text-decoration: underline; }
 }
 
 .portal-login__discord {
-  background: var(--ink-raised);
-  border: 1px solid var(--line);
-  color: var(--paper);
+  background: var(--red);
+  border: 1px solid var(--red);
+  color: var(--cream);
   justify-content: center;
   width: 100%;
+  margin-top: 24px;
 }
 
 .portal-login__discord:hover {
-  border-color: var(--red);
+  filter: brightness(1.1);
 }
 
 .portal-login__hint {
