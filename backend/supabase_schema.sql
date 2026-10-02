@@ -94,6 +94,15 @@ alter table applications add column if not exists checked_in_at timestamptz;
 -- Case-insensitive email is the primary lookup path for check-in search.
 create index if not exists applications_email_lower_idx on applications (lower(email));
 
+-- Admission decision: whether this applicant was accepted into the event.
+-- Defaults to false since most registrations are not accepted (only ~278
+-- of the much larger applicant pool); organizers flip this to true for
+-- accepted applicants via the Supabase table editor (or a bulk update from
+-- the accepted-applicant list), separately from check-in. Surfaced
+-- read-only on the day-of check-in tab so staff can see a rejected
+-- applicant showed up without being blocked from checking them in.
+alter table applications add column if not exists accepted boolean not null default false;
+
 -- Meal check-in (backend/meals.py): one boolean per real meal slot on the
 -- schedule (see repository.py's _seed_schedule), set the first time an
 -- organizer scans that hacker's QR code for that meal and never unset --

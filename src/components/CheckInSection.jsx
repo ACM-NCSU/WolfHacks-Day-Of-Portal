@@ -84,9 +84,7 @@ export default function CheckInSection({ participant }) {
       {stats && (
         <div className="team-card checkin-page__stats">
           <p className="team-card__title">Hackers checked in</p>
-          <p className="checkin-page__stats-count">
-            {stats.checked_in} <span>/ {stats.total_hackers}</span>
-          </p>
+          <p className="checkin-page__stats-count">{stats.checked_in}</p>
         </div>
       )}
 
@@ -123,6 +121,11 @@ export default function CheckInSection({ participant }) {
                   {r.first_name} {r.last_name}
                 </span>
                 <span className="checkin-page__result-email">{r.email}</span>
+                {r.accepted ? (
+                  <span className="checkin-page__badge checkin-page__badge--accepted">Accepted</span>
+                ) : (
+                  <span className="checkin-page__badge checkin-page__badge--rejected">Not accepted</span>
+                )}
               </div>
               {r.checked_in ? (
                 <span className="checkin-page__badge checkin-page__badge--done">Checked in</span>

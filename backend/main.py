@@ -391,7 +391,7 @@ def create_application(application: Application):
 # checking someone in is what then lets auth.get_current_participant let
 # them log into the portal themselves.
 
-REGISTRANT_FIELDS = "id, first_name, last_name, email, checked_in, checked_in_at"
+REGISTRANT_FIELDS = "id, first_name, last_name, email, checked_in, checked_in_at, accepted"
 
 
 class Registrant(BaseModel):
@@ -401,6 +401,7 @@ class Registrant(BaseModel):
     email: str
     checked_in: bool
     checked_in_at: str | None = None
+    accepted: bool
 
 
 def require_organizer(participant: Participant = Depends(get_current_participant)) -> Participant:

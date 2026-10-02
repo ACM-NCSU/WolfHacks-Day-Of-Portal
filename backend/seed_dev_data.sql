@@ -15,15 +15,16 @@ delete from applications where email like '%@ncsu.edu';
 insert into applications (
   id, first_name, last_name, email, age, country_of_residence,
   discord_username, phone_number, classification,
-  mlh_code_of_conduct, mlh_data_authorization, checked_in
+  mlh_code_of_conduct, mlh_data_authorization, checked_in, accepted
 ) values
-  ('00000000-0000-0000-0000-000000000001', 'Sam',    'Shah',   'sam@ncsu.edu',    20, 'United States', 'samshah',    '555-0101', 'Sophomore', true, true, true),
-  ('00000000-0000-0000-0000-000000000002', 'Alex',   'Lee',    'alex@ncsu.edu',   21, 'United States', 'alexlee',    '555-0102', 'Junior',    true, true, true),
-  ('00000000-0000-0000-0000-000000000003', 'Taylor', 'Patel',  'taylor@ncsu.edu', 19, 'United States', 'taylorp',    '555-0103', 'Freshman',  true, true, true),
-  ('00000000-0000-0000-0000-000000000004', 'Jordan', 'Kim',    'jordan@ncsu.edu', 22, 'United States', 'jordankim',  '555-0104', 'Senior',    true, true, true),
-  ('00000000-0000-0000-0000-000000000005', 'Morgan', 'Diaz',   'morgan@ncsu.edu', 20, 'United States', 'morgand',    '555-0105', 'Sophomore', true, true, true),
+  ('00000000-0000-0000-0000-000000000001', 'Sam',    'Shah',   'sam@ncsu.edu',    20, 'United States', 'samshah',    '555-0101', 'Sophomore', true, true, true, true),
+  ('00000000-0000-0000-0000-000000000002', 'Alex',   'Lee',    'alex@ncsu.edu',   21, 'United States', 'alexlee',    '555-0102', 'Junior',    true, true, true, true),
+  ('00000000-0000-0000-0000-000000000003', 'Taylor', 'Patel',  'taylor@ncsu.edu', 19, 'United States', 'taylorp',    '555-0103', 'Freshman',  true, true, true, true),
+  ('00000000-0000-0000-0000-000000000004', 'Jordan', 'Kim',    'jordan@ncsu.edu', 22, 'United States', 'jordankim',  '555-0104', 'Senior',    true, true, true, true),
+  ('00000000-0000-0000-0000-000000000005', 'Morgan', 'Diaz',   'morgan@ncsu.edu', 20, 'United States', 'morgand',    '555-0105', 'Sophomore', true, true, true, true),
   -- Casey is registered but NOT checked in -- login must be blocked (403).
-  ('00000000-0000-0000-0000-000000000006', 'Casey',  'Nguyen', 'casey@ncsu.edu',  21, 'United States', 'caseyn',     '555-0106', 'Junior',    true, true, false);
+  -- Also not accepted, to exercise the "Not accepted" check-in flag.
+  ('00000000-0000-0000-0000-000000000006', 'Casey',  'Nguyen', 'casey@ncsu.edu',  21, 'United States', 'caseyn',     '555-0106', 'Junior',    true, true, false, false);
 
 -- Wolfpack Coders: Jordan leads, Taylor is a member, Alex has a pending
 -- invite. Staggered joined_at so leader-transfer order (earliest-joined

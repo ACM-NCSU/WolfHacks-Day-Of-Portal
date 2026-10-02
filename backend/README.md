@@ -49,7 +49,12 @@ same `Authorization: Bearer <access_token>` auth as the rest of the portal;
 see `auth.get_current_participant` and `require_organizer` in `main.py`):
 
 - `GET /api/checkin/search?q=...` — searches by email (exact, case-insensitive)
-  if `q` contains `@`, otherwise by name. Returns matching registrants.
+  if `q` contains `@`, otherwise by name. Returns matching registrants,
+  including `accepted` (the admission decision, set separately from
+  check-in -- organizers flip it in the Supabase table editor) so staff can
+  see at a glance whether a registrant was actually accepted into the
+  event. This does not gate check-in; a rejected applicant who shows up is
+  flagged, not blocked.
 - `POST /api/checkin/{id}` — marks a registrant checked in.
 - `GET /api/checkin/verify?email=...` — unauthenticated, returns
   `{"checked_in": true|false}` only. This is the hook the day-of portal's
