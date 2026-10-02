@@ -12,8 +12,11 @@ export default function PortalLogin() {
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
-        if (params.get('error') === 'not_registered') {
+        const errorCode = params.get('error');
+        if (errorCode === 'not_registered') {
             setError('This account is not registered for WolfHacks. Please use the account or email you applied with.');
+        } else if (errorCode === 'not_checked_in') {
+            setError("You're registered, but not checked in yet. Head to the check-in desk, then sign in again.");
         }
     }, []);
 

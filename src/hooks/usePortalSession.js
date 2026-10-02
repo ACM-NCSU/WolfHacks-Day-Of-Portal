@@ -56,13 +56,19 @@ export default function usePortalSession() {
       });
 
       if (!response.ok) {
+        // The backend 403s for two different reasons -- never applied, or
+        // applied but not checked in at the desk yet -- and they need very
+        // different messages on the login page.
+        let errorParam = '';
+        if (response.status === 403) {
+          const payload = await response.json().catch(() => null);
+          const detail = typeof payload?.detail === 'string' ? payload.detail : '';
+          errorParam = detail.toLowerCase().includes('check in') ? 'not_checked_in' : 'not_registered';
+        }
         await supabase.auth.signOut();
         if (!cancelled) {
           setStatus('anonymous');
-          navigate(
-            response.status === 403 ? '/portal/login?error=not_registered' : '/portal/login',
-            { replace: true },
-          );
+          navigate(errorParam ? `/portal/login?error=${errorParam}` : '/portal/login', { replace: true });
         }
         return;
       }

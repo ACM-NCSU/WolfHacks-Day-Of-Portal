@@ -163,6 +163,8 @@ def get_current_participant(authorization: str | None = Header(default=None)) ->
     checked_in = bool(app_record.get("checked_in"))
 
     if not is_organizer and not checked_in:
+        # usePortalSession.js keys off "check in" in this detail to show the
+        # "head to the check-in desk" message instead of "not registered".
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You must check in at the event before accessing the portal."
