@@ -45,7 +45,13 @@ def _notify_discord(announcement: dict) -> None:
     request = urllib.request.Request(
         DISCORD_WEBHOOK_URL,
         data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            # Discord's Cloudflare front rejects urllib's default
+            # "Python-urllib/x.y" User-Agent with 403 "error code: 1010", so
+            # every relay failed until this was set explicitly.
+            "User-Agent": "WolfHacksPortal (https://github.com/ACM-NCSU/WolfHacks-Day-Of-Portal, 1.0)",
+        },
         method="POST",
     )
     try:
