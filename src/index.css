@@ -1264,9 +1264,17 @@ a.acm-mention:hover { text-decoration: underline; }
 .portal-shell__brand-mark { width: 26px; height: 26px; flex-shrink: 0; }
 .portal-shell__brand-mark .wolf-mark__icon { fill: currentColor; filter: none; animation: none; }
 
-.portal-shell__account { display: flex; align-items: center; gap: 14px; }
+.portal-shell__account { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-width: 0; }
 
 .portal-shell__back { padding: 8px 16px; font-size: 13px; }
+
+/* Four header items don't fit beside the brand on a phone. The brand mark
+   already links to the main site, so the explicit back button can go. */
+@media (max-width: 640px) {
+  .portal-shell__back { display: none; }
+  .portal-shell__account { gap: 10px; }
+  .portal-shell__account-name { overflow-wrap: anywhere; }
+}
 
 .portal-shell__checkin-badge {
   font-family: var(--font-mono);
