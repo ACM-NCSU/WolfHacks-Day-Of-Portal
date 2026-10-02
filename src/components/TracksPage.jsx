@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import siteConfig from '../data/siteConfig.js';
 
-const { tracks, judging } = siteConfig.event;
+const { tracks, challenges, judging } = siteConfig.event;
 
 function AccordionItem({ title, children }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -88,6 +88,24 @@ export default function TracksPage() {
             {track.dataScienceComponent && (
               <p><strong>Data science component:</strong> {track.dataScienceComponent}</p>
             )}
+          </AccordionItem>
+        ))}
+      </div>
+
+      <div className="portal-shell__intro" style={{ marginTop: 40 }}>
+        <p className="eyebrow">MLH PRIZES</p>
+        <h2 className="section__heading">Go for bonus prizes.</h2>
+        <p className="section__lede">
+          On top of your track, your team can opt into as many of these MLH prize categories as
+          you want. Each has one winning team. Opt in from the Team tab.
+        </p>
+      </div>
+
+      <div className="faq__list">
+        {challenges.map((prize) => (
+          <AccordionItem key={prize.slug} title={prize.name}>
+            <p><strong>Prize:</strong> {prize.prize}</p>
+            <p>{prize.description}</p>
           </AccordionItem>
         ))}
       </div>

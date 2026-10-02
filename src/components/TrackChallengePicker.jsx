@@ -4,6 +4,7 @@ import siteConfig from '../data/siteConfig.js';
 import { updateTeam } from '../lib/teamApi.js';
 
 const { tracks, challenges } = siteConfig.event;
+const KNOWN_CHALLENGE_SLUGS = new Set(challenges.map((c) => c.slug));
 
 export default function TrackChallengePicker({ team, onTeamUpdate }) {
   const [error, setError] = useState('');
@@ -29,9 +30,10 @@ export default function TrackChallengePicker({ team, onTeamUpdate }) {
   }
 
   async function toggleChallenge(slug) {
-    const next = team.challenge_slugs.includes(slug)
-      ? team.challenge_slugs.filter((s) => s !== slug)
-      : [...team.challenge_slugs, slug];
+    // Drop slugs no longer in siteConfig (e.g. retired placeholder
+    // challenges) -- the backend rejects the whole list if any are unknown.
+    const current = team.challenge_slugs.filter((s) => KNOWN_CHALLENGE_SLUGS.has(s));
+    const next = current.includes(slug) ? current.filter((s) => s !== slug) : [...current, slug];
     const previous = team;
     setError('');
     onTeamUpdate({ ...team, challenge_slugs: next });
@@ -41,13 +43,13 @@ export default function TrackChallengePicker({ team, onTeamUpdate }) {
     } catch (err) {
       console.error(err);
       onTeamUpdate(previous);
-      setError('Could not update challenges. Please try again.');
+      setError('Could not update your MLH prizes. Please try again.');
     }
   }
 
   return (
     <div className="team-card">
-      <p className="team-card__title">Track & challenges</p>
+      <p className="team-card__title">Track & MLH prizes</p>
       <label>
         <span className="application-form__question">Track</span>
         <SelectField
@@ -58,6 +60,10 @@ export default function TrackChallengePicker({ team, onTeamUpdate }) {
           options={tracks.map((t) => t.name)}
         />
       </label>
+      <div className="team-picker__prizes">
+        <span className="application-form__question">MLH prizes</span>
+        <p className="team-card__note">Opt into as many as you want -- details are on the Tracks tab.</p>
+      </div>
       <div className="team-chip-group">
         {challenges.map((challenge) => {
           const selected = team.challenge_slugs.includes(challenge.slug);

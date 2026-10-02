@@ -198,10 +198,44 @@ const siteConfig = {
       },
     ],
 
+    // MLH prize categories. Unlike tracks (one per team), teams can opt into
+    // as many of these as they want -- stored on the team as challenge_slugs.
+    // Slugs must match CHALLENGE_SLUGS in backend/teams.py exactly.
     challenges: [
-      { slug: 'best-design', name: 'Best Design', description: 'Awarded for the most polished, thoughtful user experience.' },
-      { slug: 'best-sponsor-api', name: 'Best Use of a Sponsor API', description: 'Awarded to the team that best integrates a sponsor API or tool.' },
-      { slug: 'best-first-hack', name: 'Best First Hack', description: 'For teams made up entirely of first-time hackathon participants.' },
+      {
+        slug: 'mlh-elevenlabs',
+        name: 'Best Use of ElevenLabs',
+        prize: 'Wireless earbuds',
+        description:
+          'Deploy natural, human-sounding audio with ElevenLabs. Create realistic, dynamic, and emotionally expressive voices for any project, from interactive AI companions to narrated stories and voice-enabled apps -- no actors or complex audio production needed. Give your project a voice for a chance to win wireless earbuds!',
+      },
+      {
+        slug: 'mlh-gemini',
+        name: 'Best Use of Gemini API',
+        prize: 'MLH swag kits',
+        description:
+          "Push the boundaries of what's possible with AI using Google Gemini. Build a chatbot that gives personalized advice, an app that summarizes complex research papers, or generate creative content like code, scripts, and music. What will you build with the Gemini API this weekend?",
+      },
+      {
+        slug: 'mlh-solana',
+        name: 'Best Use of Solana',
+        prize: 'SenseCAP Card Tracker',
+        description:
+          'Solana is a network built for fast execution and near-zero transaction costs. Create a game, social app, or consumer product built on instant, high-frequency transactions; design a trading, lending, or decentralized exchange (DEX); or prototype supply chain, identity, or payments that can handle real-world volume. Prizes for you and each member of your team!',
+      },
+      {
+        slug: 'mlh-tiger-data',
+        name: 'Best Use of Tiger Data',
+        prize: 'Stream Deck Mini',
+        description:
+          'Tiger Data extends PostgreSQL into an ultra-fast foundation for real-time data, time-series metrics, and complex analytics: standard SQL, relational and metric data in one database, real-time dashboards via Continuous Aggregates, and 90%+ compression on free-tier instances. The most innovative, impactful, and performance-driven use of Tiger Data wins -- think real-time IoT monitoring, AI-driven analytics dashboards, or financial prediction engines.',
+      },
+      {
+        slug: 'mlh-godaddy-domain',
+        name: 'Best Domain Name from GoDaddy Registry',
+        prize: 'Digital gift card',
+        description: 'Register your domain name with GoDaddy Registry for a chance to win some amazing prizes!',
+      },
     ],
 
     // Judging rubric shown on the portal's Tracks tab. `general` applies to

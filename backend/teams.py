@@ -26,7 +26,14 @@ TRACK_SLUGS = {
     "applied-ai-challenge",
     "advanced-analytics",
 }
-CHALLENGE_SLUGS = {"best-design", "best-sponsor-api", "best-first-hack"}
+# MLH prize categories -- teams can opt into any number of these.
+CHALLENGE_SLUGS = {
+    "mlh-elevenlabs",
+    "mlh-gemini",
+    "mlh-solana",
+    "mlh-tiger-data",
+    "mlh-godaddy-domain",
+}
 
 
 def _raise_for(err: repository.RepositoryError, status_code: int = 400):

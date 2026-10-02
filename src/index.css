@@ -1739,6 +1739,7 @@ a.acm-mention:hover { text-decoration: underline; }
 
 .team-chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; }
 .team-chip-group--tags { margin-bottom: 20px; }
+.team-picker__prizes { display: flex; flex-direction: column; gap: 6px; margin-top: 20px; }
 .team-chip {
   display: inline-flex;
   align-items: center;
