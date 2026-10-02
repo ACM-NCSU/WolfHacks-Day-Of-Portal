@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export default function PortalLogin() {
@@ -60,13 +60,26 @@ export default function PortalLogin() {
                     <h1 className="section__heading">Welcome back.</h1>
                     <p className="section__lede">Sign in to access the WolfHacks portal.</p>
 
-                    <form className="portal-login__form" onSubmit={handleLogin}>
-                        {error && (
-                            <div className="portal-login__error-box">
-                                <p>{error}</p>
-                            </div>
-                        )}
+                    {error && (
+                        <div className="portal-login__error-box">
+                            <p>{error}</p>
+                        </div>
+                    )}
 
+                    <button
+                        className="btn portal-login__discord"
+                        type="button"
+                        onClick={handleDiscordLogin}
+                        disabled={loading}
+                    >
+                        Continue with Discord
+                    </button>
+
+                    <div className="portal-login__divider">
+                        <span>Organizers</span>
+                    </div>
+
+                    <form className="portal-login__form" onSubmit={handleLogin}>
                         <label>
                             Email
                             <input
@@ -86,25 +99,6 @@ export default function PortalLogin() {
                                 required
                             />
                         </label>
-
-                        <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-                            <Link to="/portal/setup-request" style={{ fontSize: '0.85rem', color: 'inherit' }}>
-                                Set up your password
-                            </Link>
-                        </div>
-
-                        <div className="portal-login__divider">
-                            <span>OR</span>
-                        </div>
-
-                        <button
-                            className="btn portal-login__discord"
-                            type="button"
-                            onClick={handleDiscordLogin}
-                            disabled={loading}
-                        >
-                            Continue with Discord
-                        </button>
 
                         <button
                             className="btn btn--primary"

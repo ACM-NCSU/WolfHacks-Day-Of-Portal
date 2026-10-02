@@ -38,10 +38,16 @@ recreates the six accounts and the one seed team.
 
 ## Logging in
 
-Portal login is real Supabase auth now (email/password or Discord), not a
-stub — set `DEBUG=true` in `backend/.env` so `POST /api/auth/request-password-setup`
-returns a `debug_link` you can open directly instead of needing an email
-provider wired up. These accounts are pre-seeded:
+Portal login is real Supabase auth now: Discord OAuth for hackers,
+email/password for organizers (self-serve password setup was removed --
+it was an unauthenticated endpoint that handed back a working login link for
+any registered email, so organizer passwords are set directly in the
+Supabase dashboard instead). The seeded accounts below have no password and
+no linked Discord identity, so you can't log into them through the UI as-is
+-- use `VITE_SKIP_AUTH`/`VITE_SKIP_AUTH_ROLE` in `.env` to exercise the team
+dashboard as one of them locally, or link a real Discord account to a seeded
+row's `discord_id` by hand for an end-to-end login test. These accounts are
+pre-seeded:
 
 | Email | State |
 |---|---|

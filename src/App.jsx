@@ -14,7 +14,6 @@ import ThankYouPage from './components/ThankYouPage.jsx';
 import PortalShell, { PortalOverview, PortalSection } from './components/PortalShell.jsx';
 import PortalLogin from './pages/PortalLogin.jsx';
 import OrganizerPortal from './pages/OrganizerPortal.jsx';
-import UpdatePassword from './pages/UpdatePassword.jsx';
 
 function LandingPage() {
   return (
@@ -45,7 +44,6 @@ export default function App() {
       <Route path="/team" element={<Navigate to="/portal/team" replace />} />
       <Route path="/portal/login" element={<PortalLogin />} />
       <Route path="/portal/organizer" element={<OrganizerPortal />} />
-      <Route path="/portal/setup-request" element={<UpdatePassword />} />
       {/* Nested under one layout route so PortalShell (and the session it
           holds via usePortalSession) mounts once and stays mounted while
           navigating between sections -- only the Outlet content below swaps.
