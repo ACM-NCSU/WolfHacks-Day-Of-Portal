@@ -1,9 +1,19 @@
 import { Fragment, useMemo, useState } from 'react';
 import ScheduleEditForm from './ScheduleEditForm.jsx';
 import { findNextItem, getItemStatus } from '../lib/scheduleStatus.js';
+import { EVENT_TIME_ZONE, easternDateKey } from '../lib/eventTime.js';
 
-const timeFormatter = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
-const dayFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+const timeFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: EVENT_TIME_ZONE,
+  hour: 'numeric',
+  minute: '2-digit',
+});
+const dayFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: EVENT_TIME_ZONE,
+  weekday: 'long',
+  month: 'long',
+  day: 'numeric',
+});
 
 export default function ScheduleList({ schedule, now, canEdit, onChanged }) {
   const [editingId, setEditingId] = useState(null);
@@ -21,7 +31,7 @@ export default function ScheduleList({ schedule, now, canEdit, onChanged }) {
     <ul className="schedule-list">
       {schedule.map((item) => {
         const startDate = new Date(item.start_time);
-        const dateKey = startDate.toDateString();
+        const dateKey = easternDateKey(startDate);
         const isNewDay = dateKey !== lastDateKey;
         if (isNewDay) {
           lastDateKey = dateKey;

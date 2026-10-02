@@ -9,13 +9,15 @@ const siteConfig = {
     name: 'WolfHacks',
     date: 'Oct 3-4, 2026',
     location: 'Duke Energy Hall, Raleigh, NC',
-    countdownTarget: '2026-10-03T09:00:00',
+    // Both targets carry an explicit Eastern (EDT, -04:00) offset -- without
+    // one, a device in another time zone would count down to the wrong moment.
+    countdownTarget: '2026-10-03T09:00:00-04:00',
     // Drives the "time left in the hackathon" timer on the portal overview
     // page. Matches "Competition Begins" (Day 1, 11:00) through "Project
     // Submissions Due" (Day 2, 11:00) on the real schedule -- see
     // backend/repository.py's _seed_schedule -- i.e. the actual 24-hour
     // building window, not the whole two-day event.
-    hackathonEndTarget: '2026-10-04T11:00:00',
+    hackathonEndTarget: '2026-10-04T11:00:00-04:00',
 
     acm: {
       name: 'ACM at NC State',

@@ -1,4 +1,7 @@
+import { EVENT_TIME_ZONE } from '../lib/eventTime.js';
+
 const timeFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: EVENT_TIME_ZONE,
   hour: 'numeric',
   minute: '2-digit',
 });

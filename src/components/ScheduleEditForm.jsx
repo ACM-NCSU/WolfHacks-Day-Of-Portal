@@ -1,18 +1,13 @@
 import { useState } from 'react';
 import { updateScheduleItem } from '../lib/scheduleApi.js';
+import { fromEasternInputValue, toEasternInputValue } from '../lib/eventTime.js';
 
-// datetime-local wants "YYYY-MM-DDTHH:mm" in the browser's local time, with
-// no timezone designator -- new Date(...) round-trips it correctly in both
-// directions since a designator-less string is parsed as local time.
-function toLocalInputValue(iso) {
-  const d = new Date(iso);
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
+// The datetime-local inputs hold Eastern wall-clock time, not the device's
+// local time, so an organizer whose phone is set to another time zone still
+// edits the schedule in event time.
 export default function ScheduleEditForm({ item, onSaved, onCancel }) {
-  const [startTime, setStartTime] = useState(toLocalInputValue(item.start_time));
-  const [endTime, setEndTime] = useState(toLocalInputValue(item.end_time));
+  const [startTime, setStartTime] = useState(toEasternInputValue(item.start_time));
+  const [endTime, setEndTime] = useState(toEasternInputValue(item.end_time));
   const [location, setLocation] = useState(item.location || '');
   const [status, setStatus] = useState('idle'); // 'idle' | 'submitting' | 'error'
   const [error, setError] = useState('');
@@ -23,9 +18,11 @@ export default function ScheduleEditForm({ item, onSaved, onCancel }) {
     setError('');
     try {
       await updateScheduleItem(item.id, {
-        start_time: new Date(startTime).toISOString(),
-        end_time: new Date(endTime).toISOString(),
-        location: location.trim() || null,
+        start_time: fromEasternInputValue(startTime),
+        end_time: fromEasternInputValue(endTime),
+        // "" (not null) so clearing the field actually clears it -- the
+        // backend treats null as "leave unchanged".
+        location: location.trim(),
       });
       setStatus('idle');
       await onSaved();
@@ -39,7 +36,7 @@ export default function ScheduleEditForm({ item, onSaved, onCancel }) {
   return (
     <form className="schedule-edit" onSubmit={handleSubmit} noValidate>
       <label>
-        <span className="application-form__question">Starts</span>
+        <span className="application-form__question">Starts (Eastern)</span>
         <input
           type="datetime-local"
           value={startTime}
@@ -48,7 +45,7 @@ export default function ScheduleEditForm({ item, onSaved, onCancel }) {
         />
       </label>
       <label>
-        <span className="application-form__question">Ends</span>
+        <span className="application-form__question">Ends (Eastern)</span>
         <input
           type="datetime-local"
           value={endTime}
