@@ -66,6 +66,7 @@ export default function PortalLogin() {
                         </div>
                     )}
 
+                    <p className="portal-login__hint">Hackers &amp; participants, sign in here with Discord.</p>
                     <button
                         className="btn portal-login__discord"
                         type="button"
@@ -76,8 +77,11 @@ export default function PortalLogin() {
                     </button>
 
                     <div className="portal-login__divider">
-                        <span>Organizers</span>
+                        <span>Organizers only</span>
                     </div>
+                    <p className="portal-login__hint">
+                        This email/password form is for organizer accounts. If you're a hacker, use Discord above.
+                    </p>
 
                     <form className="portal-login__form" onSubmit={handleLogin}>
                         <label>

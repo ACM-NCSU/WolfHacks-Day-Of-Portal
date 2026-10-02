@@ -1060,6 +1060,14 @@ a.acm-mention:hover { text-decoration: underline; }
   border-color: var(--red);
 }
 
+.portal-login__hint {
+  margin: 0 0 8px;
+  color: var(--steel-dark);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .portal-login__error {
   margin: 0;
   color: #ff8b8b;
@@ -1552,6 +1560,14 @@ a.acm-mention:hover { text-decoration: underline; }
 
 .portal-login__discord:hover {
   border-color: var(--red);
+}
+
+.portal-login__hint {
+  margin: 0 0 8px;
+  color: var(--steel-dark);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .portal-login__error {
