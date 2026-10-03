@@ -36,11 +36,12 @@ def _notify_discord(announcement: dict) -> None:
         return
 
     payload = {
-        "content": f"\U0001F4E3 **{announcement['author_name']}**: {announcement['message']}",
-        # message is organizer-authored free text forwarded verbatim -- without
-        # this, an announcement that happens to contain "@everyone", "@here",
-        # or a role mention would actually ping the whole server when relayed.
-        "allowed_mentions": {"parse": []},
+        # Every announcement pings the whole server -- organizers asked for
+        # announcements to reach everyone, not sit unread in the channel.
+        "content": f"@everyone \U0001F4E3 **{announcement['author_name']}**: {announcement['message']}",
+        # Only @everyone/@here are honored. Role and user mentions inside the
+        # organizer's free-text message are still not pinged.
+        "allowed_mentions": {"parse": ["everyone"]},
     }
     request = urllib.request.Request(
         DISCORD_WEBHOOK_URL,
