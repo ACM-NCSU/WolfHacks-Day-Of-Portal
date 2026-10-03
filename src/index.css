@@ -1792,7 +1792,7 @@ button.team-chip--selected:hover { color: var(--cream); }
 
 .overview-staff { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .overview-staff li { display: flex; align-items: center; gap: 12px; }
-.overview-staff__swatch { width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0; }
+.overview-staff__swatch { width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0; border: 1px solid var(--steel); }
 .overview-staff__look { color: var(--paper); font-size: 15px; }
 .overview-staff__who { color: var(--steel-dark); font-family: var(--font-mono); font-size: 13px; }
 .overview-staff__who::before { content: '\2192'; margin-right: 8px; }

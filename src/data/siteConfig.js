@@ -27,7 +27,7 @@ const siteConfig = {
       highlights: ['Free food', 'Gain practical experience', 'Build something awesome', 'Get help from mentors', 'Win prizes', 'Meet new people'],
       deadlines: [
         { when: 'Sat 11:00 AM', what: 'Hacking begins' },
-        { when: 'Sat 8:00 PM', what: "Duke Energy Hall closes -- no overnight stays. Day 2 starts with breakfast at 9 AM." },
+        { when: 'Sat 7:30 PM', what: 'Everyone must leave Duke Energy Hall -- no overnight stays. Day 2 starts with breakfast at 9 AM.' },
         { when: 'Sat 11:59 PM', what: 'Checkpoint: team members and track finalized on DevPost and in the portal (mandatory)' },
         { when: 'Sun 11:00 AM', what: 'DevPost submission due' },
         { when: 'Sun 12:30 PM', what: 'Judging starts: be at your table to demo' },
@@ -55,8 +55,7 @@ const siteConfig = {
       ],
       staff: [
         { look: 'WolfHacks staff shirt', who: 'Organizers', swatch: 'var(--red)' },
-        { look: 'Purple lanyard', who: 'Mentors', swatch: '#8b3fd6' },
-        { look: 'Yellow lanyard', who: 'Judges', swatch: '#e6c619' },
+        { look: 'Black lanyard', who: 'Mentors and judges', swatch: '#000' },
       ],
       resources: [
         { name: 'WolfHacks Discord', what: 'Talk to organizers and get important announcements.' },
@@ -113,7 +112,7 @@ const siteConfig = {
         {
           question: 'Where is the event, and can I stay overnight?',
           answer:
-            "Duke Energy Hall, NC State University, Raleigh, NC. The event is in person. Parking is free on Centennial Campus from 5 PM Friday to 7 AM Monday. Overnight stays aren't available: Duke Energy Hall closes at 8 PM Saturday, so plan to head home for the night and come back for breakfast at 9 AM Sunday.",
+            "Duke Energy Hall, NC State University, Raleigh, NC. The event is in person. Parking is free on Centennial Campus from 5 PM Friday to 7 AM Monday. Overnight stays aren't available: everyone needs to leave Duke Energy Hall by 7:30 PM Saturday, so plan to head home for the night and come back for breakfast at 9 AM Sunday.",
         },
         {
           question: 'Will you reimburse travel costs?',
