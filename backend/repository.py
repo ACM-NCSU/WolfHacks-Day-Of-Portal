@@ -565,8 +565,10 @@ def update_schedule_item(
 
     new_start = start_time if start_time is not None else _parse_timestamptz(current["start_time"])
     new_end = end_time if end_time is not None else _parse_timestamptz(current["end_time"])
-    if new_end <= new_start:
-        raise RepositoryError("End time must be after start time.")
+    # end == start is allowed: it marks a single moment (e.g. "Project
+    # Submissions Due" at 11:00), which ScheduleList shows as one time.
+    if new_end < new_start:
+        raise RepositoryError("End time can't be before start time.")
 
     updates = {"start_time": new_start.isoformat(), "end_time": new_end.isoformat()}
     if title is not None:

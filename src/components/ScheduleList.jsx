@@ -64,10 +64,6 @@ export default function ScheduleList({ schedule, now, canEdit, onChanged }) {
 
         const itemStatus = getItemStatus(item, now);
         const isNext = nextItem?.id === item.id;
-        // Location is only surfaced for what's happening now or what's next --
-        // the full list stays scannable instead of repeating a room name on
-        // every row.
-        const showLocation = (itemStatus === 'current' || isNext) && item.location;
 
         return (
           <Fragment key={item.id}>
@@ -75,8 +71,14 @@ export default function ScheduleList({ schedule, now, canEdit, onChanged }) {
             <li className={`schedule-item schedule-item--${itemStatus}`}>
               <div className="schedule-item__time">
                 {timeFormatter.format(startDate)}
-                {' – '}
-                {timeFormatter.format(new Date(item.end_time))}
+                {/* A single moment (end == start, e.g. a deadline) shows one
+                    time, so "11:00 – 11:15" can't read as an extra 15 minutes. */}
+                {new Date(item.end_time).getTime() !== startDate.getTime() && (
+                  <>
+                    {' – '}
+                    {timeFormatter.format(new Date(item.end_time))}
+                  </>
+                )}
               </div>
               <div className="schedule-item__body">
                 <div className="schedule-item__title-row">
@@ -88,7 +90,7 @@ export default function ScheduleList({ schedule, now, canEdit, onChanged }) {
                     <span className="schedule-item__badge schedule-item__badge--next">Next</span>
                   )}
                 </div>
-                {showLocation && <div className="schedule-item__location">{item.location}</div>}
+                {item.location && <div className="schedule-item__location">{item.location}</div>}
               </div>
               {canEdit && (
                 <button
