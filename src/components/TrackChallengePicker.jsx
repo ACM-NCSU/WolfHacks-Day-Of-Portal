@@ -43,13 +43,13 @@ export default function TrackChallengePicker({ team, onTeamUpdate }) {
     } catch (err) {
       console.error(err);
       onTeamUpdate(previous);
-      setError('Could not update your MLH prizes. Please try again.');
+      setError('Could not update your opt-in challenges. Please try again.');
     }
   }
 
   return (
     <div className="team-card">
-      <p className="team-card__title">Track & MLH prizes</p>
+      <p className="team-card__title">Track & opt-in challenges</p>
       <label>
         <span className="application-form__question">Track</span>
         <SelectField
@@ -61,7 +61,7 @@ export default function TrackChallengePicker({ team, onTeamUpdate }) {
         />
       </label>
       <div className="team-picker__prizes">
-        <span className="application-form__question">MLH prizes</span>
+        <span className="application-form__question">Opt-in challenges</span>
         <p className="team-card__note">Opt into as many as you want -- details are on the Tracks tab.</p>
       </div>
       <div className="team-chip-group">

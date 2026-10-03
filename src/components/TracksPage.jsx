@@ -118,19 +118,20 @@ export default function TracksPage() {
       </div>
 
       <div className="portal-shell__intro" style={{ marginTop: 40 }}>
-        <p className="eyebrow">MLH PRIZES</p>
+        <p className="eyebrow">OPT-IN CHALLENGES</p>
         <h2 className="section__heading">Go for bonus prizes.</h2>
         <p className="section__lede">
-          On top of your track, your team can opt into as many of these MLH prize categories as
-          you want. Each has one winning team. Opt in from the Team tab.
+          On top of your track, your team can opt into as many of these challenges as you want --
+          the Applied AI Data Streaming Challenge and MLH&apos;s prize categories (one winning team
+          each). Opt in from the Team tab.
         </p>
       </div>
 
       <div className="faq__list">
-        {challenges.map((prize) => (
-          <AccordionItem key={prize.slug} title={prize.name}>
-            <p><strong>Prize:</strong> {prize.prize}</p>
-            <p>{prize.description}</p>
+        {challenges.map((challenge) => (
+          <AccordionItem key={challenge.slug} title={challenge.name}>
+            {challenge.prize && <p><strong>Prize:</strong> {challenge.prize}</p>}
+            <p>{challenge.description}</p>
           </AccordionItem>
         ))}
       </div>

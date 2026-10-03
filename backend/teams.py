@@ -23,11 +23,11 @@ TRACK_SLUGS = {
     "geospatial-analytics",
     "applied-ai-software",
     "applied-ai-hardware",
-    "applied-ai-challenge",
     "advanced-analytics",
 }
-# MLH prize categories -- teams can opt into any number of these.
+# Opt-in challenges -- teams can opt into any number of these.
 CHALLENGE_SLUGS = {
+    "applied-ai-data-streaming",
     "mlh-elevenlabs",
     "mlh-gemini",
     "mlh-solana",

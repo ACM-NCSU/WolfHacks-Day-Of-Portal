@@ -70,8 +70,8 @@ export default function PortalOverview() {
         <p className="eyebrow">MAIN COMPETITIONS</p>
         <h2 className="section__heading">One overall winner each.</h2>
         <p className="section__lede">
-          On top of track prizes and MLH prizes (see the Tracks tab), every team competes in one of
-          these.
+          On top of track prizes and opt-in challenges (see the Tracks tab), every team competes in
+          one of these.
         </p>
       </div>
       <div className="overview-competitions">

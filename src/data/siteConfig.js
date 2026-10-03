@@ -225,12 +225,6 @@ const siteConfig = {
         prizes: ['Acer 27" 120Hz gaming monitor', 'HyperX Cloud Stinger 2 Core gaming headset'],
       },
       {
-        slug: 'applied-ai-challenge',
-        name: 'Applied AI Data Streaming Challenge',
-        description:
-          'This challenge is an extension of the other two Applied AI tracks. Add real-time data streaming to your project from either the Databricks track or the IoT track. To participate in this challenge, stream data into Databricks instead of using a dataset, or build a real-time interface around IoT sensor data.',
-      },
-      {
         slug: 'advanced-analytics',
         name: 'Institute for Advanced Analytics',
         description:
@@ -247,10 +241,17 @@ const siteConfig = {
       },
     ],
 
-    // MLH prize categories. Unlike tracks (one per team), teams can opt into
-    // as many of these as they want -- stored on the team as challenge_slugs.
-    // Slugs must match CHALLENGE_SLUGS in backend/teams.py exactly.
+    // Opt-in challenges: unlike tracks (exactly one per team), a team can
+    // opt into any number of these -- stored on the team as challenge_slugs.
+    // Slugs must match CHALLENGE_SLUGS in backend/teams.py exactly. `prize`
+    // is optional.
     challenges: [
+      {
+        slug: 'applied-ai-data-streaming',
+        name: 'Applied AI Data Streaming Challenge',
+        description:
+          'This challenge is an extension of the other two Applied AI tracks. Add real-time data streaming to your project from either the Databricks track or the IoT track. To participate in this challenge, stream data into Databricks instead of using a dataset, or build a real-time interface around IoT sensor data.',
+      },
       {
         slug: 'mlh-elevenlabs',
         name: 'Best Use of ElevenLabs',
